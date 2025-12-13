@@ -1,6 +1,6 @@
 const pushLineMessage = (roomId, message) => {
-  const roomIdStr = String(roomId); // 比較のために文字列に変換
-  let targetGroupId = GROUP_ID; // デフォルトを設定
+  const roomIdStr = String(roomId);
+  let targetGroupId = GROUP_ID;
 
   if (LINE_GROUP_ID_MAP.hasOwnProperty(roomIdStr)) {
     targetGroupId = LINE_GROUP_ID_MAP[roomIdStr];
@@ -15,7 +15,7 @@ const pushLineMessage = (roomId, message) => {
   }
 
   console.log(message)
-  
+
   const url = "https://api.line.me/v2/bot/message/push";
   const payload = {
     to: targetGroupId, // ★ 動的に取得したGROUP_IDを使用
@@ -24,7 +24,7 @@ const pushLineMessage = (roomId, message) => {
       text: message
     }]
   };
-  
+
   const options = {
     method: "post",
     contentType: "application/json",
@@ -33,7 +33,7 @@ const pushLineMessage = (roomId, message) => {
       "Authorization": `Bearer ${ChannelAccessToken}`
     }
   };
-  
+
   try {
     // const response = UrlFetchApp.fetch(url, options);
     Logger.log(`LINE Push API Response for GROUP_ID ${targetGroupId}: ${response.getContentText()}`);

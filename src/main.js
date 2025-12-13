@@ -1,13 +1,19 @@
-// Beds24APIキー（グローバル定数は維持）
-const API_KEY = '3yYWyvMQrLiYcsK9UFX7';
+const DryRun = true;
 
-// LINE通知用URL（グローバル定数は維持）
-const ChannelAccessToken = 'SHTNc6tZ3LuYB2IqoTqFcESKSg/JJoSc3yxiGK/PhvGSxUBJEWQvtpz4Kl1pI5iyB+AYhmy3zOw+sSO8zdRbSsceKh/rUHJP0TEFmvIjfB5cptaLbSePRcgtaTuBErM112mtgYWpv0zflp6lrh4b9wdB04t89/1O/w1cDnyilFU=';
+const props = PropertiesService.getScriptProperties();
 
-// LINE通知用（グローバル定数は維持）
-const DEFAULT_LINE_GROUP_ID = 'C858bf124ace030f7f18fb258fa67b778';
-const GROUP_ID = 'Caaa9001e5f1a1da0f633d66aea94afeb';
+// Beds24APIキー
+const API_KEY = props.getProperty('BEDS24_API_KEY');
 
+// LINE通知用
+const ChannelAccessToken = props.getProperty('DEV_LINE_CHANNEL_ACCESS_TOKEN');
+
+// const ChannelAccessToken = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
+
+const DEFAULT_LINE_GROUP_ID = props.getProperty('DEFAULT_LINE_GROUP_ID');
+const GROUP_ID = props.getProperty('LINE_GROUP_ID');
+
+// 施設IDマップ
 const MINAMIFUKUOKA405605 = '547172';
 const MINAMIFUKUOKA502 = '547174';
 const SOFIATAKAKI = '586879';
@@ -15,9 +21,8 @@ const IJIRI = '594999';
 const KUKOMAE = '602449';
 const TENJIN = '614459';
 
-
 const LINE_GROUP_ID_MAP = {
-  SOFIATAKAKI: GROUP_ID
+  SOFIATAKAKI: DEFAULT_LINE_GROUP_ID
 };
 
 // 施設マッピング情報（グローバル定数）
@@ -60,40 +65,40 @@ const ROOM_ASSIGNMENT_MAP = {
 // コーポプチミラージュ
 const PROP_KEY_IJIRI = 'IJIRIqbPpTyf9bBLDQi';
 const SPREADSHEET_ID_IJIRI = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_IJIRI = "予約リスト(自動更新)"; 
+const SHEET_NAME_IJIRI = "予約リスト(自動更新)";
 const DEFAULT_ROOM_IJIRI_NUM = '306'; // 特定の部屋番号を仮として残す
 
 
 // ポートハウス天神
 const PROP_KEY_TENJIN = 'tenjin9krs0gsg98gij';
 const SPREADSHEET_ID_TENJIN = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_TENJIN = "予約リスト(自動更新)"; 
+const SHEET_NAME_TENJIN = "予約リスト(自動更新)";
 const DEFAULT_ROOM_NUM = '306'; // 特定の部屋番号を仮として残す
 
 // ガレット
 const PROP_KEY_KUKOUMAE = 'kukou9ygTGVLobPkP3A';
 const SPREADSHEET_ID_KUKOUMAE = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_KUKOUMAE = "予約リスト(自動更新)"; 
+const SHEET_NAME_KUKOUMAE = "予約リスト(自動更新)";
 const DEFAULT_KUKOUMAE_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
 
 // ソフィアたかき
 const PROP_KEY_KAIDUKA_SOFIA = 'kaiCxq3Ha9unneHL';
 const SPREADSHEET_ID_KAIDUKA_SOFIA = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_KAIDUKA_SOFIA = "予約リスト(自動更新)"; 
+const SHEET_NAME_KAIDUKA_SOFIA = "予約リスト(自動更新)";
 const DEFAULT_KAIDUKA_SOFIA_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
 
 
 // 南福岡ルネッサンス
 const PROP_KEY_MINAMI_RU = '4jsWy00rLiYcsK9UJA9';
 const SPREADSHEET_ID_MINAMI_RU= '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_MINAMI_RU = "予約リスト(自動更新)"; 
+const SHEET_NAME_MINAMI_RU = "予約リスト(自動更新)";
 const DEFAULT_MINAMI_RU_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
 
 
 // 指定がない場合は本日以降の予約を取得
 const getBookInfo = (propKey) => {
   const URL = 'https://www.beds24.com/api/json/getBookings';
-  
+
   const response = UrlFetchApp.fetch(URL, {
     method: 'post',
     contentType: 'application/json',
@@ -105,7 +110,7 @@ const getBookInfo = (propKey) => {
     "arrivalFrom": "20250901",
     }),
   });
-  
+
   return JSON.parse(response.getContentText());
 }
 
@@ -115,7 +120,7 @@ const getBookInfo = (propKey) => {
 const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
   const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
   const sheet = spreadsheet.getSheetByName(sheetName);
-  
+
   if (!sheet) {
     Logger.log(`スプレッドシートID: ${spreadsheetId} 内にシート名 ${sheetName} が見つかりません`);
     return;
@@ -136,7 +141,8 @@ const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
   const { existingById, existingArray } = readExistingBookings(sheet, indexes);
 
   // 3) APIから予約一覧を取得
-  const bookings = getBookInfo(propKey);
+  const bookings = DryRun ? testBookings : getBookInfo(propKey);
+
 
   // 4) 追加・更新処理
   bookings.forEach((b) =>
@@ -171,7 +177,7 @@ const main = () => {
 // ----------------------------------------------------------------------
 
 const getRequiredColumnIndexes = (sheet, headerMap) => {
-  const lastCol = sheet.getLastColumn() || 1; 
+  const lastCol = sheet.getLastColumn() || 1;
   const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
 
   const idx = Object.fromEntries(
@@ -182,7 +188,7 @@ const getRequiredColumnIndexes = (sheet, headerMap) => {
   if (missing.length) {
     const need = Object.values(headerMap).join(", ");
     Logger.log(`必須カラム名（${need}）のいずれかが見つかりません`);
-    return null; 
+    return null;
   }
   return idx;
 };
@@ -226,23 +232,23 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
     numAdult,
     numChild,
     guestCountry,
-    roomId: rawRoomId, 
+    roomId: rawRoomId,
   } = booking;
 
   const checkIn = firstNight;
   const checkOut = formatDate(addOneDay(lastNight));
   const newCancel = status === "0" ? "TRUE" : "";
-  
+
   const roomId = String(rawRoomId);
   const facilityName = ROOM_MAP[roomId] || '不明な施設'; // FACILTY_NAMEを汎用的な名前に変更
   const facilityNum = FACILITY_NUM_MAP[roomId] || "";
-  
+
   if (existingById[bookId]) {
     updateExistingRow(sheet, idx, existingById[bookId], { bookId, newCancel, cancelTime });
   } else {
     // 部屋番号は、roomIDから取得できる情報がない場合、グローバル定数のデフォルトを使用
       const roomNumber = getRoomNumber(booking, existingArray);
- 
+
     const numberOfGuests = toNumber(numAdult) + toNumber(numChild);
     const guestCountryName = getLanguageNameFromCode(guestCountry);
 
@@ -255,7 +261,7 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
       checkOut,
       facilityNum,
       facilityName,
-      roomNumber, // 施設名と参照元（referer）の間に移動
+      roomNumber,
       referer,
       numAdult: toNumber(numAdult),
       numChild: toNumber(numChild),
@@ -316,7 +322,7 @@ const appendNewBookingRow = (sheet, idx, payload) => {
     checkOut,
     facilityNum,
     facilityName,
-    roomNumber, // 👈 ここに移動
+    roomNumber,
     referer,
     numAdult,
     numChild,
@@ -331,10 +337,10 @@ const appendNewBookingRow = (sheet, idx, payload) => {
     `${guestName || ""} ${guestFirstName || ""}`.trim(),
     checkIn,
     checkOut,
-    facilityNum,  // E列: 施設番号
-    facilityName, // F列: 施設名
-    roomNumber,   // G列: 部屋番号
-    referer,      // H列: OTA(予約サイト)
+    facilityNum,
+    facilityName,
+    roomNumber,
+    referer,
     numAdult,
     numChild,
     numberOfGuests,
@@ -388,7 +394,7 @@ const addOneDay = dateStr => {
 };
 
 const getDates = (date) => {
-  // 日付部分だけを取得（時刻情報を除外） 
+  // 日付部分だけを取得（時刻情報を除外）
   return Utilities.formatDate(new Date(date), Session.getScriptTimeZone(), "yyyy-MM-dd")
 }
 

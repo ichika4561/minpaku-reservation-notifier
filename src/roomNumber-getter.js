@@ -7,7 +7,7 @@ const getRoomNumber = (booking, existingArray) => {
     return assignedRooms[0];
   }
 
-  
+
   const firstNight = getDates(booking.firstNight);
   const checkOut = addOneDay(booking.lastNight);
   const targetCheckout = getDates(checkOut);
@@ -18,7 +18,7 @@ const getRoomNumber = (booking, existingArray) => {
     // if (existing.RoomNumber === 405) {
     // console.log(existingCheckIn, existingCheckOut);
     // console.log(firstNight, targetCheckout);
-  
+
     // console.log(targetCheckout > existingCheckIn, targetCheckout, existingCheckIn);
     // console.log(targetCheckout <= existingCheckOut);
 
@@ -27,7 +27,7 @@ const getRoomNumber = (booking, existingArray) => {
     // console.log((firstNight <= existingCheckIn && targetCheckout >= existingCheckOut));
     // }
 
-    
+
     // 部屋番号が 405 の予約と比較し、期間が重複するか確認
       return existing.RoomNumber === 405 && (
       (firstNight >= existingCheckIn && firstNight < existingCheckOut) ||  // 新しい予約のチェックインが重複
@@ -43,8 +43,7 @@ const getRoomNumber = (booking, existingArray) => {
   const assignedRoom = hasConflict ? "605" : "405";
     // const assignedRoom = "405";
 
-  
+
   Logger.log(`Assigned Room: ${assignedRoom}`);
   return assignedRoom;
 };
-
