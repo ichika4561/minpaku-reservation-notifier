@@ -35,7 +35,7 @@ const pushLineMessage = (roomId, message) => {
   };
 
   try {
-    // const response = UrlFetchApp.fetch(url, options);
+    const response = UrlFetchApp.fetch(url, options);
     Logger.log(`LINE Push API Response for GROUP_ID ${targetGroupId}: ${response.getContentText()}`);
   } catch(e) {
     Logger.log(`Error sending LINE message to GROUP_ID ${targetGroupId}: ${e.toString()}`);
