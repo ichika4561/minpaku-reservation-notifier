@@ -1,4 +1,4 @@
-const DryRun = true;
+const IS_TEST_MODE = true;
 
 const props = PropertiesService.getScriptProperties();
 
@@ -10,8 +10,14 @@ const ChannelAccessToken = props.getProperty('DEV_LINE_CHANNEL_ACCESS_TOKEN');
 
 // const ChannelAccessToken = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
 
-const DEFAULT_LINE_GROUP_ID = props.getProperty('DEFAULT_LINE_GROUP_ID');
-const GROUP_ID = props.getProperty('LINE_GROUP_ID');
+const PRODUCTION_GROUP_ID = 'LINE_GROUP_ID';
+const TEST_GROUP_ID = 'DEV_LINE_GROUP_ID';
+
+
+const GROUP_ID = IS_TEST_MODE ? TEST_GROUP_ID : PRODUCTION_GROUP_ID;
+
+const DEFAULT_LINE_GROUP_ID = TEST_GROUP_ID;
+
 
 // 施設IDマップ
 const MINAMIFUKUOKA405605 = '547172';
@@ -141,7 +147,7 @@ const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
   const { existingById, existingArray } = readExistingBookings(sheet, indexes);
 
   // 3) APIから予約一覧を取得
-  const bookings = DryRun ? testBookings : getBookInfo(propKey);
+  const bookings = IS_TEST_MODE ? testBookings : getBookInfo(propKey);
 
 
   // 4) 追加・更新処理
