@@ -1,4 +1,4 @@
-const bookings = [
+const testBookings = [
   {
     bookId: '65100000', // 既存でキャンセルされていなかったものがキャンセルになるケース
     roomId: '547174',
