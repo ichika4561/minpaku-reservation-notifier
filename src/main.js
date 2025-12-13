@@ -1,0 +1,401 @@
+// Beds24APIキー（グローバル定数は維持）
+const API_KEY = '3yYWyvMQrLiYcsK9UFX7';
+
+// LINE通知用URL（グローバル定数は維持）
+const ChannelAccessToken = 'SHTNc6tZ3LuYB2IqoTqFcESKSg/JJoSc3yxiGK/PhvGSxUBJEWQvtpz4Kl1pI5iyB+AYhmy3zOw+sSO8zdRbSsceKh/rUHJP0TEFmvIjfB5cptaLbSePRcgtaTuBErM112mtgYWpv0zflp6lrh4b9wdB04t89/1O/w1cDnyilFU=';
+
+// LINE通知用（グローバル定数は維持）
+const DEFAULT_LINE_GROUP_ID = 'C858bf124ace030f7f18fb258fa67b778';
+const GROUP_ID = 'Caaa9001e5f1a1da0f633d66aea94afeb';
+
+const MINAMIFUKUOKA405605 = '547172';
+const MINAMIFUKUOKA502 = '547174';
+const SOFIATAKAKI = '586879';
+const IJIRI = '594999';
+const KUKOMAE = '602449';
+const TENJIN = '614459';
+
+
+const LINE_GROUP_ID_MAP = {
+  SOFIATAKAKI: GROUP_ID
+};
+
+// 施設マッピング情報（グローバル定数）
+const ROOM_MAP = {
+    // 547172 = 405/605
+    '547172': '南福岡ルネッサンス',
+    // 547174 = 502
+    '547174': '南福岡ルネッサンス',
+    '586879': 'ソフィアたかき(貝塚)',
+    '594999': 'コーポプチミラージュ(井尻)',
+    '602449': 'ガレット空港前',
+    '614459': 'ポートハウス天神',
+};
+
+const FACILITY_NUM_MAP = {
+    // 南福岡ルネッサンス
+    '547172':  "'0038393",
+    '547174': "'0038393",
+    // 貝塚
+    '586879': "'0040711",
+    '594999': "'0042005",
+// ガレット空港前
+    '602449': "'0042013",
+  // ポートハウス天神
+    '614459': "'0042315",
+};
+
+
+const ROOM_ASSIGNMENT_MAP = {
+  '547174': ['502'], // roomId '547174' には '502' のみが割り当て可能
+  // '547172': ['405', '605'], // roomId '547172' には '405' または '605' が割り当て可能 (優先順)
+   '586879': ['202'],
+   '594999': ['203'],
+   '602449': ['107'],
+   '614459': ['306'],
+};
+
+// 💡 施設ごとの設定をグローバル定数として定義
+
+// コーポプチミラージュ
+const PROP_KEY_IJIRI = 'IJIRIqbPpTyf9bBLDQi';
+const SPREADSHEET_ID_IJIRI = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
+const SHEET_NAME_IJIRI = "予約リスト(自動更新)"; 
+const DEFAULT_ROOM_IJIRI_NUM = '306'; // 特定の部屋番号を仮として残す
+
+
+// ポートハウス天神
+const PROP_KEY_TENJIN = 'tenjin9krs0gsg98gij';
+const SPREADSHEET_ID_TENJIN = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
+const SHEET_NAME_TENJIN = "予約リスト(自動更新)"; 
+const DEFAULT_ROOM_NUM = '306'; // 特定の部屋番号を仮として残す
+
+// ガレット
+const PROP_KEY_KUKOUMAE = 'kukou9ygTGVLobPkP3A';
+const SPREADSHEET_ID_KUKOUMAE = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
+const SHEET_NAME_KUKOUMAE = "予約リスト(自動更新)"; 
+const DEFAULT_KUKOUMAE_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
+
+// ソフィアたかき
+const PROP_KEY_KAIDUKA_SOFIA = 'kaiCxq3Ha9unneHL';
+const SPREADSHEET_ID_KAIDUKA_SOFIA = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
+const SHEET_NAME_KAIDUKA_SOFIA = "予約リスト(自動更新)"; 
+const DEFAULT_KAIDUKA_SOFIA_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
+
+
+// 南福岡ルネッサンス
+const PROP_KEY_MINAMI_RU = '4jsWy00rLiYcsK9UJA9';
+const SPREADSHEET_ID_MINAMI_RU= '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
+const SHEET_NAME_MINAMI_RU = "予約リスト(自動更新)"; 
+const DEFAULT_MINAMI_RU_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
+
+
+// 指定がない場合は本日以降の予約を取得
+const getBookInfo = (propKey) => {
+  const URL = 'https://www.beds24.com/api/json/getBookings';
+  
+  const response = UrlFetchApp.fetch(URL, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify({
+    authentication: {
+      apiKey: API_KEY,
+      propKey: propKey,
+    },
+    "arrivalFrom": "20250901",
+    }),
+  });
+  
+  return JSON.parse(response.getContentText());
+}
+
+/**
+ * 予約シートをAPIデータで追加・更新するメイン関数
+ */
+const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
+  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  const sheet = spreadsheet.getSheetByName(sheetName);
+  
+  if (!sheet) {
+    Logger.log(`スプレッドシートID: ${spreadsheetId} 内にシート名 ${sheetName} が見つかりません`);
+    return;
+  }
+
+  // 1) 必須カラムのインデックス取得
+  const indexes = getRequiredColumnIndexes(sheet, {
+    bookingId: "BookingId",
+    checkIn: "チェックイン",
+    checkOut: "チェックアウト",
+    roomNumber: "部屋番号", // このカラムの位置が変更されても、ヘッダーで参照するため影響なし
+    cancel: "キャンセル",
+    cancelTime: "キャンセル時刻",
+  });
+  if (!indexes) return;
+
+  // 2) 既存データを読み取り
+  const { existingById, existingArray } = readExistingBookings(sheet, indexes);
+
+  // 3) APIから予約一覧を取得
+  const bookings = getBookInfo(propKey);
+
+  // 4) 追加・更新処理
+  bookings.forEach((b) =>
+    upsertOneBooking(sheet, indexes, existingById, existingArray, b)
+  );
+};
+
+// ----------------------------------------------------------------------
+// 新しい実行関数
+// ----------------------------------------------------------------------
+
+/**
+ * プロパティごとに updateBookingSheet を実行するためのメイン関数
+ */
+const main = () => {
+    updateBookingSheet(PROP_KEY_TENJIN, SHEET_NAME_TENJIN, SPREADSHEET_ID_TENJIN);
+    updateBookingSheet(PROP_KEY_KUKOUMAE, SHEET_NAME_KUKOUMAE, SPREADSHEET_ID_KUKOUMAE);
+    updateBookingSheet(PROP_KEY_KAIDUKA_SOFIA, SHEET_NAME_KAIDUKA_SOFIA, SPREADSHEET_ID_KAIDUKA_SOFIA);
+    updateBookingSheet(PROP_KEY_MINAMI_RU, SHEET_NAME_MINAMI_RU, SPREADSHEET_ID_MINAMI_RU);
+    updateBookingSheet(PROP_KEY_IJIRI, SHEET_NAME_IJIRI, SPREADSHEET_ID_IJIRI);
+
+    // 別の施設がある場合は、以下のように追加で呼び出せます
+    // const PROP_KEY2 = 'anotherpropkeyabc';
+    // const SPREADSHEET_ID2 = '別のスプレッドシートID';
+    // const SHEET_NAME2 = '別のシート名';
+    // updateBookingSheet(PROP_KEY2, SHEET_NAME2, SPREADSHEET_ID2);
+};
+
+
+// ----------------------------------------------------------------------
+// 小さな責務の関数たち（修正箇所あり）
+// ----------------------------------------------------------------------
+
+const getRequiredColumnIndexes = (sheet, headerMap) => {
+  const lastCol = sheet.getLastColumn() || 1; 
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+  const idx = Object.fromEntries(
+    Object.entries(headerMap).map(([key, label]) => [key, headers.indexOf(label) + 1])
+  );
+
+  const missing = Object.entries(idx).filter(([, v]) => v === 0);
+  if (missing.length) {
+    const need = Object.values(headerMap).join(", ");
+    Logger.log(`必須カラム名（${need}）のいずれかが見つかりません`);
+    return null; 
+  }
+  return idx;
+};
+
+const readExistingBookings = (sheet, idx) => {
+  const data = sheet.getDataRange().getValues();
+  const existingById = {};
+  const existingArray = [];
+
+  data.slice(1).forEach((row, i) => {
+    const bookId = row[idx.bookingId - 1];
+    if (!bookId) return;
+
+    existingById[bookId] = {
+      rowNum: i + 2,
+      cancel: normalizeCancel(row[idx.cancel - 1]),
+      roomNumber: row[idx.roomNumber - 1],
+    };
+
+    existingArray.push({
+      BookingId: bookId,
+      CheckIn: row[idx.checkIn - 1],
+      CheckOut: row[idx.checkOut - 1],
+      RoomNumber: row[idx.roomNumber - 1],
+    });
+  });
+
+  return { existingById, existingArray };
+};
+
+const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
+  const {
+    bookId,
+    firstNight,
+    lastNight,
+    status,
+    cancelTime,
+    guestName,
+    guestFirstName,
+    referer,
+    numAdult,
+    numChild,
+    guestCountry,
+    roomId: rawRoomId, 
+  } = booking;
+
+  const checkIn = firstNight;
+  const checkOut = formatDate(addOneDay(lastNight));
+  const newCancel = status === "0" ? "TRUE" : "";
+  
+  const roomId = String(rawRoomId);
+  const facilityName = ROOM_MAP[roomId] || '不明な施設'; // FACILTY_NAMEを汎用的な名前に変更
+  const facilityNum = FACILITY_NUM_MAP[roomId] || "";
+  
+  if (existingById[bookId]) {
+    updateExistingRow(sheet, idx, existingById[bookId], { bookId, newCancel, cancelTime });
+  } else {
+    // 部屋番号は、roomIDから取得できる情報がない場合、グローバル定数のデフォルトを使用
+      const roomNumber = getRoomNumber(booking, existingArray);
+ 
+    const numberOfGuests = toNumber(numAdult) + toNumber(numChild);
+    const guestCountryName = getLanguageNameFromCode(guestCountry);
+
+    // 施設番号、施設名、部屋番号の順序を変更して渡す
+    appendNewBookingRow(sheet, idx, {
+      bookId,
+      guestName,
+      guestFirstName,
+      checkIn,
+      checkOut,
+      facilityNum,
+      facilityName,
+      roomNumber, // 施設名と参照元（referer）の間に移動
+      referer,
+      numAdult: toNumber(numAdult),
+      numChild: toNumber(numChild),
+      numberOfGuests,
+      guestCountryName,
+      cancel: newCancel,
+      cancelTime: cancelTime || "",
+    });
+
+    if (newCancel !== "TRUE") {
+      pushNewBookingLineNotification({
+        facilityName,
+        checkIn,
+        checkOut,
+        roomId,
+        roomNumber,
+        guestName,
+        guestFirstName,
+        numberOfGuests,
+        guestCountryName,
+        referer,
+      });
+    } else {
+      Logger.log(
+        `新規追加されたBookingId ${bookId} はキャンセル済みのため、LINE通知は送信しませんでした。`
+      );
+    }
+  }
+};
+
+const updateExistingRow = (sheet, idx, existing, { bookId, newCancel, cancelTime }) => {
+  const row = existing.rowNum;
+  const currentCancel = existing.cancel;
+  if (currentCancel === newCancel) return;
+
+  sheet.getRange(row, idx.cancel).setValue(newCancel);
+  sheet.getRange(row, idx.cancelTime).setValue(cancelTime || "");
+
+  if (newCancel === "TRUE") {
+    const currentRoomNumber = String(existing.roomNumber || "");
+    if (!currentRoomNumber.endsWith("_キャンセル")) {
+      const newRoomNumber = `${currentRoomNumber}_キャンセル`;
+      sheet.getRange(row, idx.roomNumber).setValue(newRoomNumber);
+      Logger.log(
+        `BookingId ${bookId} がキャンセルされたため、部屋番号を ${newRoomNumber} に更新しました。`
+      );
+    }
+  }
+};
+
+// 💡 修正: roomNumberをfacilityNameとrefererの間に移動
+const appendNewBookingRow = (sheet, idx, payload) => {
+  const {
+    bookId,
+    guestName,
+    guestFirstName,
+    checkIn,
+    checkOut,
+    facilityNum,
+    facilityName,
+    roomNumber, // 👈 ここに移動
+    referer,
+    numAdult,
+    numChild,
+    numberOfGuests,
+    guestCountryName,
+    cancel,
+    cancelTime,
+  } = payload;
+
+  sheet.appendRow([
+    bookId,
+    `${guestName || ""} ${guestFirstName || ""}`.trim(),
+    checkIn,
+    checkOut,
+    facilityNum,  // E列: 施設番号
+    facilityName, // F列: 施設名
+    roomNumber,   // G列: 部屋番号
+    referer,      // H列: OTA(予約サイト)
+    numAdult,
+    numChild,
+    numberOfGuests,
+    guestCountryName,
+    cancel,
+    cancelTime,
+  ]);
+};
+
+const pushNewBookingLineNotification = ({
+  facilityName,
+  checkIn,
+  checkOut,
+  roomId,
+  roomNumber,
+  guestName,
+  guestFirstName,
+  numberOfGuests,
+  guestCountryName,
+  referer,
+}) => {
+  pushLineMessage(
+    roomId,
+    `お疲れ様です！
+宿泊施設名：【${facilityName}】
+・チェックイン：${checkIn}
+・チェックアウト：${checkOut}
+・部屋番号: ${roomNumber}
+・ゲスト名： ${(guestName || "") + " " + (guestFirstName || "")}
+・ゲスト人数： ${numberOfGuests}
+・国籍： ${guestCountryName || "不明"}
+
+・OTA(予約サイト)： ${referer || "不明"}
+`
+  );
+};
+
+/* ===============================
+ * ユーティリティ（変更なし）
+ * =============================== */
+const toNumber = (n) => Number(n || 0);
+
+const normalizeCancel = (val) =>
+  String(val).toUpperCase() === "TRUE" ? "TRUE" : "";
+
+// 日付を1日加算する関数
+const addOneDay = dateStr => {
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
+  return date;
+};
+
+const getDates = (date) => {
+  // 日付部分だけを取得（時刻情報を除外） 
+  return Utilities.formatDate(new Date(date), Session.getScriptTimeZone(), "yyyy-MM-dd")
+}
+
+// YYYY-MM-DD 形式にフォーマットする関数
+const formatDate = date => {
+  const year = date.getFullYear();
+  const month = ('0' + (date.getMonth() + 1)).slice(-2);
+  const day = ('0' + date.getDate()).slice(-2);
+  return `${year}-${month}-${day}`;
+};

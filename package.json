@@ -1,0 +1,15 @@
+{
+  "name": "minpaku-reservation-notifier",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "push:personal": "cd config_personal && clasp push",
+    "push:dist": "cd config_dist && clasp push",
+    "pull:personal": "cd config_personal && clasp pull",
+    "watch:personal": "cd config_personal && clasp push --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
