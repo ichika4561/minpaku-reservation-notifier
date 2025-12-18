@@ -27,9 +27,9 @@ const KUKOMAE = '602449';
 const TENJIN = '614459';
 
 const LINE_GROUP_ID_MAP = {
-  [SOFIATAKAKI]: GROUP_ID,
   [MINAMIFUKUOKA502]: GROUP_ID,
   [MINAMIFUKUOKA405605]: GROUP_ID,
+  [SOFIATAKAKI]: GROUP_ID,
   [KUKOMAE]: GROUP_ID,
   [TENJIN]: GROUP_ID,
 };
@@ -37,26 +37,26 @@ const LINE_GROUP_ID_MAP = {
 // 施設マッピング情報（グローバル定数）
 const ROOM_MAP = {
     // 547172 = 405/605
-    '547172': '南福岡ルネッサンス',
+    [MINAMIFUKUOKA502]: '南福岡ルネッサンス',
     // 547174 = 502
-    '547174': '南福岡ルネッサンス',
-    '586879': 'ソフィアたかき(貝塚)',
+    [MINAMIFUKUOKA405605]: '南福岡ルネッサンス',
+    [SOFIATAKAKI]: 'ソフィアたかき(貝塚)',
     '594999': 'コーポプチミラージュ(井尻)',
-    '602449': 'ガレット空港前',
-    '614459': 'ポートハウス天神',
+    [KUKOMAE]: 'ガレット空港前',
+    [TENJIN]: 'ポートハウス天神',
 };
 
 const FACILITY_NUM_MAP = {
     // 南福岡ルネッサンス
-    '547172':  "'0038393",
-    '547174': "'0038393",
+    [MINAMIFUKUOKA502]:  "'0038393",
+    [MINAMIFUKUOKA405605]: "'0038393",
     // 貝塚
-    '586879': "'0040711",
+    [SOFIATAKAKI]: "'0040711",
     '594999': "'0042005",
 // ガレット空港前
-    '602449': "'0042013",
+    [KUKOMAE]: "'0042013",
   // ポートハウス天神
-    '614459': "'0042315",
+    [TENJIN]: "'0042315",
 };
 
 

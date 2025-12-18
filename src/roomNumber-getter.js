@@ -1,49 +1,55 @@
+/**
+ * 優先順位リスト(ROOM_ASSIGNMENT_MAP)に基づいて空いている部屋を割り当てる関数
+ */
 const getRoomNumber = (booking, existingArray) => {
+  // main.js で定義された ROOM_ASSIGNMENT_MAP から候補リストを取得
   const assignedRooms = ROOM_ASSIGNMENT_MAP[booking.roomId];
 
+  // 候補リストがない、または空の場合はログを出力
+  if (!assignedRooms || assignedRooms.length === 0) {
+    Logger.log(`RoomID ${booking.roomId} に対する割り当て候補(assignedRooms)が設定されていません。`);
+    return null; // 必要に応じてデフォルト値を設定してください
+  }
 
-  // 割り当てリストが存在する場合、最初の要素（優先度の高い部屋）を返す
-  if (assignedRooms && assignedRooms.length > 0) {
+  // ★追加: 候補が1つだけなら、重複チェックをせずにその部屋を返す
+  if (assignedRooms.length === 1) {
     return assignedRooms[0];
   }
 
-
+  // 予約の日程を計算
   const firstNight = getDates(booking.firstNight);
   const checkOut = addOneDay(booking.lastNight);
   const targetCheckout = getDates(checkOut);
 
-  const hasConflict = existingArray.some(existing => {
-    const existingCheckIn = getDates(existing.CheckIn);
-    const existingCheckOut = getDates(existing.CheckOut);
-    // if (existing.RoomNumber === 405) {
-    // console.log(existingCheckIn, existingCheckOut);
-    // console.log(firstNight, targetCheckout);
+  // 候補リストを上から順にチェック（候補が複数の場合のみここまで来る）
+  for (const roomCandidate of assignedRooms) {
 
-    // console.log(targetCheckout > existingCheckIn, targetCheckout, existingCheckIn);
-    // console.log(targetCheckout <= existingCheckOut);
+    // その部屋候補(roomCandidate)について、既存予約との重複を確認
+    const hasConflict = existingArray.some(existing => {
+      // 部屋番号が違うなら重複しない
+      if (String(existing.RoomNumber) !== String(roomCandidate)) {
+        return false;
+      }
 
-    // console.log((firstNight >= existingCheckIn && firstNight < existingCheckOut));
-    // console.log((targetCheckout > existingCheckIn && targetCheckout <= existingCheckOut));
-    // console.log((firstNight <= existingCheckIn && targetCheckout >= existingCheckOut));
-    // }
+      const existingCheckIn = getDates(existing.CheckIn);
+      const existingCheckOut = getDates(existing.CheckOut);
 
+      // 期間の重複判定
+      return (
+        (firstNight >= existingCheckIn && firstNight < existingCheckOut) ||
+        (targetCheckout > existingCheckIn && targetCheckout <= existingCheckOut) ||
+        (firstNight <= existingCheckIn && targetCheckout >= existingCheckOut)
+      );
+    });
 
-    // 部屋番号が 405 の予約と比較し、期間が重複するか確認
-      return existing.RoomNumber === 405 && (
-      (firstNight >= existingCheckIn && firstNight < existingCheckOut) ||  // 新しい予約のチェックインが重複
-      (targetCheckout > existingCheckIn && targetCheckout <= existingCheckOut) ||   // 新しい予約のチェックアウトが重複
-      (firstNight <= existingCheckIn && targetCheckout >= existingCheckOut)     // 新しい予約が既存予約を完全に覆っている
-  );
-  });
+    // コンフリクトがなければ、この部屋を採用して終了
+    if (!hasConflict) {
+      Logger.log(`Assigned Room: ${roomCandidate}`);
+      return roomCandidate;
+    }
+  }
 
-    console.log('hasConflict', hasConflict)
-
-
-  // 重複がなければ 405、重複があれば 605 を返す
-  const assignedRoom = hasConflict ? "605" : "405";
-    // const assignedRoom = "405";
-
-
-  Logger.log(`Assigned Room: ${assignedRoom}`);
-  return assignedRoom;
+  // 全候補が埋まっている場合は、リストの先頭（優先度1位）を返す（あるいはnull等）
+  Logger.log(`警告: RoomID ${booking.roomId} の候補部屋すべて(${assignedRooms.join(', ')})が埋まっています。`);
+  return assignedRooms[0];
 };
