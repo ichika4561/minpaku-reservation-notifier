@@ -223,6 +223,8 @@ const readExistingBookings = (sheet, idx) => {
       rowNum: i + 2,
       cancel: normalizeCancel(row[idx.cancel - 1]),
       roomNumber: row[idx.roomNumber - 1],
+      checkIn: String(row[idx.checkIn - 1] || ""),
+      checkOut: String(row[idx.checkOut - 1] || ""),
     };
 
     existingArray.push({
@@ -261,7 +263,7 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
   const facilityNum = FACILITY_NUM_MAP[roomId] || "";
 
   if (existingById[bookId]) {
-    updateExistingRow(sheet, idx, existingById[bookId], { bookId, newCancel, cancelTime });
+    updateExistingRow(sheet, idx, existingById[bookId], { bookId, newCancel, cancelTime, checkIn, checkOut });
   } else {
     // 部屋番号は、roomIDから取得できる情報がない場合、グローバル定数のデフォルトを使用
       const roomNumber = getRoomNumber(booking, existingArray);
@@ -309,9 +311,25 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
   }
 };
 
-const updateExistingRow = (sheet, idx, existing, { bookId, newCancel, cancelTime }) => {
+const updateExistingRow = (sheet, idx, existing, { bookId, newCancel, cancelTime, checkIn, checkOut }) => {
   const row = existing.rowNum;
   const currentCancel = existing.cancel;
+
+  // 日付変更チェック
+  const normalizedCheckIn = String(checkIn || "").slice(0, 10);
+  const normalizedCheckOut = String(checkOut || "").slice(0, 10);
+  const existingCheckIn = String(existing.checkIn || "").slice(0, 10);
+  const existingCheckOut = String(existing.checkOut || "").slice(0, 10);
+
+  if (normalizedCheckIn !== existingCheckIn) {
+    sheet.getRange(row, idx.checkIn).setValue(checkIn);
+    Logger.log(`BookingId ${bookId} のチェックインを ${existingCheckIn} → ${normalizedCheckIn} に更新しました。`);
+  }
+  if (normalizedCheckOut !== existingCheckOut) {
+    sheet.getRange(row, idx.checkOut).setValue(checkOut);
+    Logger.log(`BookingId ${bookId} のチェックアウトを ${existingCheckOut} → ${normalizedCheckOut} に更新しました。`);
+  }
+
   if (currentCancel === newCancel) return;
 
   sheet.getRange(row, idx.cancel).setValue(newCancel);
