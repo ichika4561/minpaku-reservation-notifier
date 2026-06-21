@@ -22,7 +22,9 @@ const DEFAULT_LINE_GROUP_ID = TEST_GROUP_ID;
 const MINAMIFUKUOKA405605 = '547172';
 const MINAMIFUKUOKA502 = '547174';
 const SOFIATAKAKI = '586879';
-const IJIRI = '594999';
+const IJIRI = '594999';       // 井尻203号室
+const IJIRI_202A = '662306';  // 井尻202号室 (IJIRIGoodStay)
+const IJIRI_202B = '662309';  // 井尻202号室 (IjiriGoodStay)
 const KUKOMAE = '602449';
 const TENJIN = '614459';
 
@@ -31,6 +33,8 @@ const LINE_GROUP_ID_MAP = {
   [MINAMIFUKUOKA405605]: GROUP_ID,
   [SOFIATAKAKI]: GROUP_ID,
   [IJIRI]: GROUP_ID,
+  [IJIRI_202A]: GROUP_ID,
+  [IJIRI_202B]: GROUP_ID,
   [KUKOMAE]: GROUP_ID,
   [TENJIN]: GROUP_ID,
 };
@@ -43,6 +47,8 @@ const ROOM_MAP = {
     [MINAMIFUKUOKA405605]: '南福岡ルネッサンス',
     [SOFIATAKAKI]: 'ソフィアたかき(貝塚)',
     [IJIRI]: 'コーポプチミラージュ(井尻)',
+    [IJIRI_202A]: 'コーポプチミラージュ(井尻)',
+    [IJIRI_202B]: 'コーポプチミラージュ(井尻)',
     [KUKOMAE]: 'ガレット空港前',
     [TENJIN]: 'ポートハウス天神',
 };
@@ -53,7 +59,10 @@ const FACILITY_NUM_MAP = {
     [MINAMIFUKUOKA405605]: "'0038393",
     // 貝塚
     [SOFIATAKAKI]: "'0040711",
+    // 井尻
     [IJIRI]: "'0042005",
+    [IJIRI_202A]: "'0042005",
+    [IJIRI_202B]: "'0042005",
     // ガレット空港前
     [KUKOMAE]: "'0042013",
     // ポートハウス天神
@@ -62,12 +71,14 @@ const FACILITY_NUM_MAP = {
 
 
 const ROOM_ASSIGNMENT_MAP = {
-  '547174': ['502'], // roomId '547174' には '502' のみが割り当て可能
-  // '547172': ['405', '605'], // roomId '547172' には '405' または '605' が割り当て可能 (優先順)
-   '586879': ['202'],
-   '594999': ['203'],
-   '602449': ['107'],
-   '614459': ['306'],
+  '547174': ['502'],
+  // '547172': ['405', '605'],
+  '586879': ['202'],
+  '594999': ['203'],
+  '662306': ['202'],
+  '662309': ['202'],
+  '602449': ['107'],
+  '614459': ['306'],
 };
 
 // 💡 施設ごとの設定をグローバル定数として定義
