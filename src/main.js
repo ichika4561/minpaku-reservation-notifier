@@ -30,6 +30,7 @@ const LINE_GROUP_ID_MAP = {
   [MINAMIFUKUOKA502]: GROUP_ID,
   [MINAMIFUKUOKA405605]: GROUP_ID,
   [SOFIATAKAKI]: GROUP_ID,
+  [IJIRI]: GROUP_ID,
   [KUKOMAE]: GROUP_ID,
   [TENJIN]: GROUP_ID,
 };
@@ -41,7 +42,7 @@ const ROOM_MAP = {
     // 547174 = 502
     [MINAMIFUKUOKA405605]: '南福岡ルネッサンス',
     [SOFIATAKAKI]: 'ソフィアたかき(貝塚)',
-    '594999': 'コーポプチミラージュ(井尻)',
+    [IJIRI]: 'コーポプチミラージュ(井尻)',
     [KUKOMAE]: 'ガレット空港前',
     [TENJIN]: 'ポートハウス天神',
 };
@@ -52,10 +53,10 @@ const FACILITY_NUM_MAP = {
     [MINAMIFUKUOKA405605]: "'0038393",
     // 貝塚
     [SOFIATAKAKI]: "'0040711",
-    '594999': "'0042005",
-// ガレット空港前
+    [IJIRI]: "'0042005",
+    // ガレット空港前
     [KUKOMAE]: "'0042013",
-  // ポートハウス天神
+    // ポートハウス天神
     [TENJIN]: "'0042315",
 };
 
@@ -75,33 +76,26 @@ const ROOM_ASSIGNMENT_MAP = {
 const PROP_KEY_IJIRI = 'IJIRIqbPpTyf9bBLDQi';
 const SPREADSHEET_ID_IJIRI = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
 const SHEET_NAME_IJIRI = "予約リスト(自動更新)";
-const DEFAULT_ROOM_IJIRI_NUM = '306'; // 特定の部屋番号を仮として残す
-
 
 // ポートハウス天神
 const PROP_KEY_TENJIN = 'tenjin9krs0gsg98gij';
 const SPREADSHEET_ID_TENJIN = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
 const SHEET_NAME_TENJIN = "予約リスト(自動更新)";
-const DEFAULT_ROOM_NUM = '306'; // 特定の部屋番号を仮として残す
 
-// ガレット
+// ガレット空港前
 const PROP_KEY_KUKOUMAE = 'kukou9ygTGVLobPkP3A';
 const SPREADSHEET_ID_KUKOUMAE = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
 const SHEET_NAME_KUKOUMAE = "予約リスト(自動更新)";
-const DEFAULT_KUKOUMAE_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
 
 // ソフィアたかき
 const PROP_KEY_KAIDUKA_SOFIA = 'kaiCxq3Ha9unneHL';
 const SPREADSHEET_ID_KAIDUKA_SOFIA = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
 const SHEET_NAME_KAIDUKA_SOFIA = "予約リスト(自動更新)";
-const DEFAULT_KAIDUKA_SOFIA_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
-
 
 // 南福岡ルネッサンス
 const PROP_KEY_MINAMI_RU = '4jsWy00rLiYcsK9UJA9';
 const SPREADSHEET_ID_MINAMI_RU= '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
 const SHEET_NAME_MINAMI_RU = "予約リスト(自動更新)";
-const DEFAULT_MINAMI_RU_ROOM_NUM = '107'; // 特定の部屋番号を仮として残す
 
 
 // 指定がない場合は本日以降の予約を取得
@@ -256,7 +250,7 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
       const roomNumber = getRoomNumber(booking, existingArray);
 
     const numberOfGuests = toNumber(numAdult) + toNumber(numChild);
-    const guestCountryName = getLanguageNameFromCode(guestCountry);
+    const guestCountryName = getCountryNameFromCode(guestCountry);
 
     // 施設番号、施設名、部屋番号の順序を変更して渡す
     appendNewBookingRow(sheet, idx, {

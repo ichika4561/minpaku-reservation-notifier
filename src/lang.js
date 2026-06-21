@@ -1,10 +1,9 @@
 /**
- * 言語コードから言語名を返す関数
- * @param {string} code - ISO 639-1/639-2 言語コード（例: 'jp', 'en', 'fr'など）
- * @return {string} 言語の名前。コードが見つからない場合は「不明な言語コード」を返す
+ * 国コード（ISO 3166-1 alpha-2）から国名を返す関数
+ * @param {string} code - ISO 3166-1 alpha-2 国コード（例: 'jp', 'us', 'fr'など）
+ * @return {string} 国名。コードが見つからない場合は「不明な国コード: <code>」を返す
  */
-const getLanguageNameFromCode = (code) =>  {
-  // 言語コードと言語名のマッピング
+const getCountryNameFromCode = (code) =>  {
   const languageMap = {
     'ad': 'アンドラ',
     'ae': 'アラブ首長国連邦',
@@ -120,7 +119,6 @@ const getLanguageNameFromCode = (code) =>  {
     'jm': 'ジャマイカ',
     'jo': 'ヨルダン',
     'jp': '日本',
-    'ja': '日本',
     'ke': 'ケニア',
     'kg': 'キルギス',
     'kh': 'カンボジア',
@@ -256,64 +254,43 @@ const getLanguageNameFromCode = (code) =>  {
     'za': '南アフリカ',
     'zm': 'ザンビア',
     'zw': 'ジンバブエ',
-    'zh': '中国',
-    'ko': '韓国'
 };
 
   if(code === undefined){
     return code;
   }
-  
-  // 小文字に変換して検索
+
   const lowerCode = code.toLowerCase();
-  
-  // 言語コードがマップに存在するかチェック
+
   if (languageMap[lowerCode]) {
     return languageMap[lowerCode];
   } else {
-    return '不明な言語コード: ' + code;
+    return '不明な国コード: ' + code;
   }
 }
 
-/**
- * 言語コードを入力すると言語名を返すテスト関数
- */
 function testLanguageCode() {
-  // テストするコード
-  const testCodes = ['jp', 'en', 'fr', 'de', 'th', 'ru', 'cl', 'zho'];
-  
-  // 結果を表示
+  const testCodes = ['jp', 'us', 'fr', 'de', 'th', 'ru', 'kr', 'cn'];
   for (const code of testCodes) {
-    const result = getLanguageNameFromCode(code);
-    Logger.log(code + ': ' + result);
+    Logger.log(code + ': ' + getCountryNameFromCode(code));
   }
 }
 
 /**
- * スプレッドシートで使用する場合のカスタム関数
- * @param {string} code - 言語コード
- * @return {string} 言語名
+ * @param {string} code - 国コード
+ * @return {string} 国名
  * @customfunction
  */
 function LANGUAGE_NAME(code) {
-  return getLanguageNameFromCode(code);
+  return getCountryNameFromCode(code);
 }
 
-/**
- * Webアプリケーションとして公開する場合のエントリーポイント
- */
 function doGet(e) {
-  // GETパラメータからcodeを取得
   const code = e.parameter.code;
-  
-  let result;
-  if (code) {
-    result = getLanguageNameFromCode(code);
-  } else {
-    result = "エラー: 言語コードを指定してください。例: ?code=jp";
-  }
-  
-  // JSONとして結果を返す
+  const result = code
+    ? getCountryNameFromCode(code)
+    : "エラー: 国コードを指定してください。例: ?code=jp";
+
   return ContentService.createTextOutput(JSON.stringify({
     code: code,
     name: result

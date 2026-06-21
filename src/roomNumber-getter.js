@@ -49,7 +49,6 @@ const getRoomNumber = (booking, existingArray) => {
     }
   }
 
-  // 全候補が埋まっている場合は、リストの先頭（優先度1位）を返す（あるいはnull等）
   Logger.log(`警告: RoomID ${booking.roomId} の候補部屋すべて(${assignedRooms.join(', ')})が埋まっています。`);
-  return assignedRooms[0];
+  return null;
 };

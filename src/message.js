@@ -15,11 +15,11 @@ const pushLineMessage = (roomId, message) => {
     return;
   }
 
-  console.log(message)
+  Logger.log(message);
 
   const url = "https://api.line.me/v2/bot/message/push";
   const payload = {
-    to: targetGroupId, // ★ 動的に取得したGROUP_IDを使用
+    to: targetGroupId,
     messages: [{
       type: "text",
       text: message
