@@ -110,7 +110,7 @@ const getBookInfo = (propKey) => {
       apiKey: API_KEY,
       propKey: propKey,
     },
-    "arrivalFrom": "20250901",
+    "arrivalFrom": "20260622",
     }),
   });
 
