@@ -1,4 +1,4 @@
-const IS_TEST_MODE = true;
+const IS_TEST_MODE = false;
 
 const props = PropertiesService.getScriptProperties();
 
@@ -271,24 +271,24 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
       cancelTime: cancelTime || "",
     });
 
-    if (newCancel !== "TRUE") {
-      pushNewBookingLineNotification({
-        facilityName,
-        checkIn,
-        checkOut,
-        roomId,
-        roomNumber,
-        guestName,
-        guestFirstName,
-        numberOfGuests,
-        guestCountryName,
-        referer,
-      });
-    } else {
-      Logger.log(
-        `新規追加されたBookingId ${bookId} はキャンセル済みのため、LINE通知は送信しませんでした。`
-      );
-    }
+    // if (newCancel !== "TRUE") {
+    //   pushNewBookingLineNotification({
+    //     facilityName,
+    //     checkIn,
+    //     checkOut,
+    //     roomId,
+    //     roomNumber,
+    //     guestName,
+    //     guestFirstName,
+    //     numberOfGuests,
+    //     guestCountryName,
+    //     referer,
+    //   });
+    // } else {
+    //   Logger.log(
+    //     `新規追加されたBookingId ${bookId} はキャンセル済みのため、LINE通知は送信しませんでした。`
+    //   );
+    // }
   }
 };
 
