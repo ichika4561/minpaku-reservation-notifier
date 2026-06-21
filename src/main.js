@@ -10,7 +10,7 @@ const ChannelAccessToken = props.getProperty('DEV_LINE_CHANNEL_ACCESS_TOKEN');
 
 // const ChannelAccessToken = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
 
-const PRODUCTION_GROUP_ID = props.getProperty('AKIYOSI_LINE_GROUP_ID');
+const PRODUCTION_GROUP_ID = props.getProperty('DEV_LINE_GROUP_ID');
 const TEST_GROUP_ID = props.getProperty('DEV_LINE_GROUP_ID');
 
 const GROUP_ID = IS_TEST_MODE ? TEST_GROUP_ID : PRODUCTION_GROUP_ID;
