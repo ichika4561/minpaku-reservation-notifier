@@ -83,10 +83,15 @@ const ROOM_ASSIGNMENT_MAP = {
 
 // 💡 施設ごとの設定をグローバル定数として定義
 
-// コーポプチミラージュ
+// コーポプチミラージュ (IJIRIGoodStay 285193: 202tatami + 203modern)
 const PROP_KEY_IJIRI = 'IJIRIqbPpTyf9bBLDQi';
 const SPREADSHEET_ID_IJIRI = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
 const SHEET_NAME_IJIRI = "予約リスト(自動更新)";
+
+// コーポプチミラージュ (IjiriGoodStay 318146: 202号室)
+const PROP_KEY_IJIRI_202 = 'ijiri202_37whghea7';
+const SPREADSHEET_ID_IJIRI_202 = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
+const SHEET_NAME_IJIRI_202 = "予約リスト(自動更新)";
 
 // ポートハウス天神
 const PROP_KEY_TENJIN = 'tenjin9krs0gsg98gij';
@@ -174,6 +179,7 @@ const main = () => {
     updateBookingSheet(PROP_KEY_KAIDUKA_SOFIA, SHEET_NAME_KAIDUKA_SOFIA, SPREADSHEET_ID_KAIDUKA_SOFIA);
     updateBookingSheet(PROP_KEY_MINAMI_RU, SHEET_NAME_MINAMI_RU, SPREADSHEET_ID_MINAMI_RU);
     updateBookingSheet(PROP_KEY_IJIRI, SHEET_NAME_IJIRI, SPREADSHEET_ID_IJIRI);
+    updateBookingSheet(PROP_KEY_IJIRI_202, SHEET_NAME_IJIRI_202, SPREADSHEET_ID_IJIRI_202);
 
     // 別の施設がある場合は、以下のように追加で呼び出せます
     // const PROP_KEY2 = 'anotherpropkeyabc';
