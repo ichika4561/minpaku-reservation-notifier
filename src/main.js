@@ -30,37 +30,16 @@ const ROOM_ASSIGNMENT_MAP = Object.fromEntries(
   Object.entries(PROPERTY_CONFIG).map(([roomId, cfg]) => [roomId, cfg.rooms])
 );
 
-// 💡 施設ごとの設定をグローバル定数として定義
-
-// コーポプチミラージュ (IJIRIGoodStay 285193: 202tatami + 203modern)
-const PROP_KEY_IJIRI = 'IJIRIqbPpTyf9bBLDQi';
-const SPREADSHEET_ID_IJIRI = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_IJIRI = "予約リスト(自動更新)";
-
-// コーポプチミラージュ (IjiriGoodStay 318146: 202号室)
-const PROP_KEY_IJIRI_202 = 'ijiri202_37whghea7';
-const SPREADSHEET_ID_IJIRI_202 = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_IJIRI_202 = "予約リスト(自動更新)";
-
-// ポートハウス天神
-const PROP_KEY_TENJIN = 'tenjin9krs0gsg98gij';
-const SPREADSHEET_ID_TENJIN = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_TENJIN = "予約リスト(自動更新)";
-
-// ガレット空港前
-const PROP_KEY_KUKOUMAE = 'kukou9ygTGVLobPkP3A';
-const SPREADSHEET_ID_KUKOUMAE = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_KUKOUMAE = "予約リスト(自動更新)";
-
-// ソフィアたかき
-const PROP_KEY_KAIDUKA_SOFIA = 'kaiCxq3Ha9unneHL';
-const SPREADSHEET_ID_KAIDUKA_SOFIA = '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_KAIDUKA_SOFIA = "予約リスト(自動更新)";
-
-// 南福岡ルネッサンス
-const PROP_KEY_MINAMI_RU = '4jsWy00rLiYcsK9UJA9';
-const SPREADSHEET_ID_MINAMI_RU= '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc';
-const SHEET_NAME_MINAMI_RU = "予約リスト(自動更新)";
+// 物件ごとのfetch設定（propKey・スプレッドシート）
+// 物件追加・削除はここだけ変更する
+const PROPERTIES = [
+  { propKey: 'tenjin9krs0gsg98gij',  spreadsheetId: '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc', sheetName: '予約リスト(自動更新)' }, // ポートハウス天神
+  { propKey: 'kukou9ygTGVLobPkP3A',  spreadsheetId: '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc', sheetName: '予約リスト(自動更新)' }, // ガレット空港前
+  { propKey: 'kaiCxq3Ha9unneHL',     spreadsheetId: '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc', sheetName: '予約リスト(自動更新)' }, // ソフィアたかき
+  { propKey: '4jsWy00rLiYcsK9UJA9',  spreadsheetId: '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc', sheetName: '予約リスト(自動更新)' }, // 南福岡ルネッサンス
+  { propKey: 'IJIRIqbPpTyf9bBLDQi',  spreadsheetId: '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc', sheetName: '予約リスト(自動更新)' }, // コーポプチミラージュ(IJIRIGoodStay 285193)
+  { propKey: 'ijiri202_37whghea7',   spreadsheetId: '1zBIxaa8bZam9JcL3Ta_CD_nRrxvjfae-3U_cIMtqUkc', sheetName: '予約リスト(自動更新)' }, // コーポプチミラージュ(IjiriGoodStay 318146)
+];
 
 
 // 指定がない場合は本日以降の予約を取得
@@ -123,18 +102,9 @@ const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
  * プロパティごとに updateBookingSheet を実行するためのメイン関数
  */
 const main = () => {
-    updateBookingSheet(PROP_KEY_TENJIN, SHEET_NAME_TENJIN, SPREADSHEET_ID_TENJIN);
-    updateBookingSheet(PROP_KEY_KUKOUMAE, SHEET_NAME_KUKOUMAE, SPREADSHEET_ID_KUKOUMAE);
-    updateBookingSheet(PROP_KEY_KAIDUKA_SOFIA, SHEET_NAME_KAIDUKA_SOFIA, SPREADSHEET_ID_KAIDUKA_SOFIA);
-    updateBookingSheet(PROP_KEY_MINAMI_RU, SHEET_NAME_MINAMI_RU, SPREADSHEET_ID_MINAMI_RU);
-    updateBookingSheet(PROP_KEY_IJIRI, SHEET_NAME_IJIRI, SPREADSHEET_ID_IJIRI);
-    updateBookingSheet(PROP_KEY_IJIRI_202, SHEET_NAME_IJIRI_202, SPREADSHEET_ID_IJIRI_202);
-
-    // 別の施設がある場合は、以下のように追加で呼び出せます
-    // const PROP_KEY2 = 'anotherpropkeyabc';
-    // const SPREADSHEET_ID2 = '別のスプレッドシートID';
-    // const SHEET_NAME2 = '別のシート名';
-    // updateBookingSheet(PROP_KEY2, SHEET_NAME2, SPREADSHEET_ID2);
+  PROPERTIES.forEach(({ propKey, spreadsheetId, sheetName }) =>
+    updateBookingSheet(propKey, spreadsheetId, sheetName)
+  );
 };
 
 
