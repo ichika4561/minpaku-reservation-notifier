@@ -1,17 +1,6 @@
-const pushLineMessage = (roomId, message) => {
-  const roomIdStr = String(roomId);
-  let targetGroupId = null;
-
-  if (LINE_GROUP_ID_MAP.hasOwnProperty(roomIdStr)) {
-    targetGroupId = LINE_GROUP_ID_MAP[roomIdStr];
-    Logger.log(`RoomID ${roomIdStr} に対応するGROUP_IDが見つかりました: ${targetGroupId}`);
-  } else {
-    targetGroupId = DEFAULT_LINE_GROUP_ID;
-    Logger.log(`RoomID ${roomIdStr} に対応するGROUP_IDがマップに見つかりません。デフォルトのGROUP_ID (${DEFAULT_LINE_GROUP_ID}) を使用します。`);
-  }
-
+const pushLineMessage = (targetGroupId, message) => {
   if (!targetGroupId) {
-    Logger.log('送信先のGROUP_IDが特定できませんでした。メッセージ送信を中止します。');
+    Logger.log('送信先のGROUP_IDが指定されていません。メッセージ送信を中止します。');
     return;
   }
 

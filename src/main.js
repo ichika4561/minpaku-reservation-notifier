@@ -10,76 +10,25 @@ const ChannelAccessToken = props.getProperty('DEV_LINE_CHANNEL_ACCESS_TOKEN');
 
 // const ChannelAccessToken = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
 
-const PRODUCTION_GROUP_ID = props.getProperty('DEV_LINE_GROUP_ID');
-const TEST_GROUP_ID = props.getProperty('DEV_LINE_GROUP_ID');
+// 井尻清掃会社（深町さん）のLINEグループID
+const LINE_GROUP_IJIRI = 'C39a22d60cbd917fa49cc5c5199ff6b27';
 
-const GROUP_ID = IS_TEST_MODE ? TEST_GROUP_ID : PRODUCTION_GROUP_ID;
-
-const DEFAULT_LINE_GROUP_ID = TEST_GROUP_ID;
-
-
-// 施設IDマップ
-const MINAMIFUKUOKA405605 = '547172';
-const MINAMIFUKUOKA502 = '547174';
-const SOFIATAKAKI = '586879';
-const IJIRI = '594999';       // 井尻203号室
-const IJIRI_202A = '662306';  // 井尻202号室 (IJIRIGoodStay)
-const IJIRI_202B = '662309';  // 井尻202号室 (IjiriGoodStay)
-const KUKOMAE = '602449';
-const TENJIN = '614459';
-
-const LINE_GROUP_ID_MAP = {
-  [MINAMIFUKUOKA502]: GROUP_ID,
-  [MINAMIFUKUOKA405605]: GROUP_ID,
-  [SOFIATAKAKI]: GROUP_ID,
-  [IJIRI]: GROUP_ID,
-  [IJIRI_202A]: GROUP_ID,
-  [IJIRI_202B]: GROUP_ID,
-  [KUKOMAE]: GROUP_ID,
-  [TENJIN]: GROUP_ID,
+// 物件ごとの設定を一元管理
+// lineGroupId: null → LINE通知しない
+const PROPERTY_CONFIG = {
+  '547172': { facilityName: '南福岡ルネッサンス',        facilityNum: "'0038393", rooms: ['405', '605'], lineGroupId: null },
+  '547174': { facilityName: '南福岡ルネッサンス',        facilityNum: "'0038393", rooms: ['502'],        lineGroupId: null },
+  '586879': { facilityName: 'ソフィアたかき(貝塚)',      facilityNum: "'0040711", rooms: ['202'],        lineGroupId: null },
+  '594999': { facilityName: 'コーポプチミラージュ(井尻)', facilityNum: "'0042005", rooms: ['203'],        lineGroupId: LINE_GROUP_IJIRI },
+  '662306': { facilityName: 'コーポプチミラージュ(井尻)', facilityNum: "'0042005", rooms: ['202'],        lineGroupId: LINE_GROUP_IJIRI },
+  '662309': { facilityName: 'コーポプチミラージュ(井尻)', facilityNum: "'0042005", rooms: ['202'],        lineGroupId: LINE_GROUP_IJIRI },
+  '602449': { facilityName: 'ガレット空港前',            facilityNum: "'0042013", rooms: ['107'],        lineGroupId: null },
+  '614459': { facilityName: 'ポートハウス天神',          facilityNum: "'0042315", rooms: ['306'],        lineGroupId: null },
 };
 
-// 施設マッピング情報（グローバル定数）
-const ROOM_MAP = {
-    // 547172 = 405/605
-    [MINAMIFUKUOKA502]: '南福岡ルネッサンス',
-    // 547174 = 502
-    [MINAMIFUKUOKA405605]: '南福岡ルネッサンス',
-    [SOFIATAKAKI]: 'ソフィアたかき(貝塚)',
-    [IJIRI]: 'コーポプチミラージュ(井尻)',
-    [IJIRI_202A]: 'コーポプチミラージュ(井尻)',
-    [IJIRI_202B]: 'コーポプチミラージュ(井尻)',
-    [KUKOMAE]: 'ガレット空港前',
-    [TENJIN]: 'ポートハウス天神',
-};
-
-const FACILITY_NUM_MAP = {
-    // 南福岡ルネッサンス
-    [MINAMIFUKUOKA502]:  "'0038393",
-    [MINAMIFUKUOKA405605]: "'0038393",
-    // 貝塚
-    [SOFIATAKAKI]: "'0040711",
-    // 井尻
-    [IJIRI]: "'0042005",
-    [IJIRI_202A]: "'0042005",
-    [IJIRI_202B]: "'0042005",
-    // ガレット空港前
-    [KUKOMAE]: "'0042013",
-    // ポートハウス天神
-    [TENJIN]: "'0042315",
-};
-
-
-const ROOM_ASSIGNMENT_MAP = {
-  '547174': ['502'],
-  '547172': ['405', '605'], // 405優先、埋まっていれば605
-  '586879': ['202'],
-  '594999': ['203'],
-  '662306': ['202'],
-  '662309': ['202'],
-  '602449': ['107'],
-  '614459': ['306'],
-};
+const ROOM_ASSIGNMENT_MAP = Object.fromEntries(
+  Object.entries(PROPERTY_CONFIG).map(([roomId, cfg]) => [roomId, cfg.rooms])
+);
 
 // 💡 施設ごとの設定をグローバル定数として定義
 
@@ -259,8 +208,9 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
   const newCancel = status === "0" ? "TRUE" : "";
 
   const roomId = String(rawRoomId);
-  const facilityName = ROOM_MAP[roomId] || '不明な施設'; // FACILTY_NAMEを汎用的な名前に変更
-  const facilityNum = FACILITY_NUM_MAP[roomId] || "";
+  const config = PROPERTY_CONFIG[roomId] || {};
+  const facilityName = config.facilityName || '不明な施設';
+  const facilityNum = config.facilityNum || "";
 
   if (existingById[bookId]) {
     updateExistingRow(sheet, idx, existingById[bookId], { bookId, newCancel, cancelTime, checkIn, checkOut });
@@ -290,24 +240,30 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
       cancelTime: cancelTime || "",
     });
 
-    // if (newCancel !== "TRUE") {
-    //   pushNewBookingLineNotification({
-    //     facilityName,
-    //     checkIn,
-    //     checkOut,
-    //     roomId,
-    //     roomNumber,
-    //     guestName,
-    //     guestFirstName,
-    //     numberOfGuests,
-    //     guestCountryName,
-    //     referer,
-    //   });
-    // } else {
-    //   Logger.log(
-    //     `新規追加されたBookingId ${bookId} はキャンセル済みのため、LINE通知は送信しませんでした。`
-    //   );
-    // }
+    const lineGroupId = config.lineGroupId || null;
+    const today = getDates(new Date());
+    const isTodayCheckIn = checkIn === today;
+    const shouldNotify = lineGroupId && newCancel !== "TRUE" && (isTodayCheckIn || true);
+    // 当日IN以外も通知する場合は上の `|| true` を残す。当日INのみにするなら `isTodayCheckIn` だけにする
+
+    if (shouldNotify) {
+      pushNewBookingLineNotification({
+        lineGroupId,
+        facilityName,
+        checkIn,
+        checkOut,
+        roomNumber,
+        guestName,
+        guestFirstName,
+        numberOfGuests,
+        guestCountryName,
+        referer,
+      });
+    } else if (newCancel === "TRUE") {
+      Logger.log(`新規追加されたBookingId ${bookId} はキャンセル済みのため、LINE通知は送信しませんでした。`);
+    } else if (!lineGroupId) {
+      Logger.log(`BookingId ${bookId} の物件(roomId: ${roomId})にはLINE通知先が設定されていません。`);
+    }
   }
 };
 
@@ -386,10 +342,10 @@ const appendNewBookingRow = (sheet, idx, payload) => {
 };
 
 const pushNewBookingLineNotification = ({
+  lineGroupId,
   facilityName,
   checkIn,
   checkOut,
-  roomId,
   roomNumber,
   guestName,
   guestFirstName,
@@ -398,7 +354,7 @@ const pushNewBookingLineNotification = ({
   referer,
 }) => {
   pushLineMessage(
-    roomId,
+    lineGroupId,
     `お疲れ様です！
 宿泊施設名：【${facilityName}】
 ・チェックイン：${checkIn}
