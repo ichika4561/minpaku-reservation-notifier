@@ -6,12 +6,15 @@ const props = PropertiesService.getScriptProperties();
 const API_KEY = props.getProperty('BEDS24_API_KEY');
 
 // LINE通知用
-const ChannelAccessToken = props.getProperty('DEV_LINE_CHANNEL_ACCESS_TOKEN');
+// const ChannelAccessToken = props.getProperty('DEV_LINE_CHANNEL_ACCESS_TOKEN');
 
-// const ChannelAccessToken = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
+const ChannelAccessToken = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
 
 // 井尻清掃会社（深町さん）のLINEグループID
 const LINE_GROUP_IJIRI = 'C39a22d60cbd917fa49cc5c5199ff6b27';
+
+// しげた整骨院のLINEグループID（井尻以外の当日IN通知先）
+const LINE_GROUP_SHIGETA = 'C6b893f35b01cb6d2d30a1e7470eba7eb';
 
 // 物件ごとの設定を一元管理
 // lineGroupId: null → LINE通知しない
@@ -54,7 +57,7 @@ const getBookInfo = (propKey) => {
       apiKey: API_KEY,
       propKey: propKey,
     },
-    "arrivalFrom": "20260622",
+    "arrivalFrom": "20260625",
     }),
   });
 
@@ -103,7 +106,7 @@ const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
  */
 const main = () => {
   PROPERTIES.forEach(({ propKey, spreadsheetId, sheetName }) =>
-    updateBookingSheet(propKey, spreadsheetId, sheetName)
+    updateBookingSheet(propKey, sheetName, spreadsheetId)
   );
 };
 
@@ -213,26 +216,41 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
     const lineGroupId = config.lineGroupId || null;
     const today = getDates(new Date());
     const isTodayCheckIn = checkIn === today;
-    const shouldNotify = lineGroupId && newCancel !== "TRUE" && (isTodayCheckIn || true);
-    // 当日IN以外も通知する場合は上の `|| true` を残す。当日INのみにするなら `isTodayCheckIn` だけにする
 
-    if (shouldNotify) {
-      pushNewBookingLineNotification({
-        lineGroupId,
-        facilityName,
-        checkIn,
-        checkOut,
-        roomNumber,
-        guestName,
-        guestFirstName,
-        numberOfGuests,
-        guestCountryName,
-        referer,
-      });
-    } else if (newCancel === "TRUE") {
+    if (newCancel === "TRUE") {
       Logger.log(`新規追加されたBookingId ${bookId} はキャンセル済みのため、LINE通知は送信しませんでした。`);
-    } else if (!lineGroupId) {
-      Logger.log(`BookingId ${bookId} の物件(roomId: ${roomId})にはLINE通知先が設定されていません。`);
+    } else {
+      // 井尻：既存通知（当日IN以外も含む）
+      if (lineGroupId) {
+        pushNewBookingLineNotification({
+          lineGroupId,
+          facilityName,
+          checkIn,
+          checkOut,
+          roomNumber,
+          guestName,
+          guestFirstName,
+          numberOfGuests,
+          guestCountryName,
+          referer,
+        });
+      }
+
+      // 井尻以外：当日INのみKENさんに通知
+      if (!lineGroupId && isTodayCheckIn) {
+        pushNewBookingLineNotification({
+          lineGroupId: LINE_GROUP_SHIGETA,
+          facilityName,
+          checkIn,
+          checkOut,
+          roomNumber,
+          guestName,
+          guestFirstName,
+          numberOfGuests,
+          guestCountryName,
+          referer,
+        });
+      }
     }
   }
 };
