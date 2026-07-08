@@ -184,15 +184,27 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
   const config = PROPERTY_CONFIG[roomId] || {};
   const facilityName = config.facilityName || '不明な施設';
   const facilityNum = config.facilityNum || "";
+  const numberOfGuests = toNumber(numAdult) + toNumber(numChild);
+  const guestCountryName = getCountryNameFromCode(guestCountry);
 
   if (existingById[bookId]) {
-    updateExistingRow(sheet, idx, existingById[bookId], { bookId, newCancel, cancelTime, checkIn, checkOut });
+    updateExistingRow(sheet, idx, existingById[bookId], {
+      bookId,
+      newCancel,
+      cancelTime,
+      checkIn,
+      checkOut,
+      config,
+      facilityName,
+      guestName,
+      guestFirstName,
+      numberOfGuests,
+      guestCountryName,
+      referer,
+    });
   } else {
     // 部屋番号は、roomIDから取得できる情報がない場合、グローバル定数のデフォルトを使用
       const roomNumber = getRoomNumber(booking, existingArray);
-
-    const numberOfGuests = toNumber(numAdult) + toNumber(numChild);
-    const guestCountryName = getCountryNameFromCode(guestCountry);
 
     // 施設番号、施設名、部屋番号の順序を変更して渡す
     appendNewBookingRow(sheet, idx, {
@@ -255,7 +267,11 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
   }
 };
 
-const updateExistingRow = (sheet, idx, existing, { bookId, newCancel, cancelTime, checkIn, checkOut }) => {
+const updateExistingRow = (sheet, idx, existing, payload) => {
+  const {
+    bookId, newCancel, cancelTime, checkIn, checkOut,
+    config, facilityName, guestName, guestFirstName, numberOfGuests, guestCountryName, referer,
+  } = payload;
   const row = existing.rowNum;
   const currentCancel = existing.cancel;
 
@@ -264,6 +280,7 @@ const updateExistingRow = (sheet, idx, existing, { bookId, newCancel, cancelTime
   const normalizedCheckOut = String(checkOut || "").slice(0, 10);
   const existingCheckIn = String(existing.checkIn || "").slice(0, 10);
   const existingCheckOut = String(existing.checkOut || "").slice(0, 10);
+  const dateChanged = normalizedCheckIn !== existingCheckIn || normalizedCheckOut !== existingCheckOut;
 
   if (normalizedCheckIn !== existingCheckIn) {
     sheet.getRange(row, idx.checkIn).setValue(checkIn);
@@ -274,20 +291,71 @@ const updateExistingRow = (sheet, idx, existing, { bookId, newCancel, cancelTime
     Logger.log(`BookingId ${bookId} のチェックアウトを ${existingCheckOut} → ${normalizedCheckOut} に更新しました。`);
   }
 
+  if (dateChanged && currentCancel !== "TRUE") {
+    notifyBookingUpdate({
+      kind: 'change',
+      config,
+      facilityName,
+      checkIn: normalizedCheckIn,
+      checkOut: normalizedCheckOut,
+      beforeCheckIn: existingCheckIn,
+      beforeCheckOut: existingCheckOut,
+      roomNumber: existing.roomNumber,
+      guestName,
+      guestFirstName,
+      numberOfGuests,
+      guestCountryName,
+      referer,
+    });
+  }
+
   if (currentCancel === newCancel) return;
 
   sheet.getRange(row, idx.cancel).setValue(newCancel);
   sheet.getRange(row, idx.cancelTime).setValue(cancelTime || "");
 
   if (newCancel === "TRUE") {
+    let roomNumberForNotify = existing.roomNumber;
     const currentRoomNumber = String(existing.roomNumber || "");
     if (!currentRoomNumber.endsWith("_キャンセル")) {
       const newRoomNumber = `${currentRoomNumber}_キャンセル`;
       sheet.getRange(row, idx.roomNumber).setValue(newRoomNumber);
+      roomNumberForNotify = newRoomNumber;
       Logger.log(
         `BookingId ${bookId} がキャンセルされたため、部屋番号を ${newRoomNumber} に更新しました。`
       );
     }
+
+    notifyBookingUpdate({
+      kind: 'cancel',
+      config,
+      facilityName,
+      checkIn: normalizedCheckIn,
+      checkOut: normalizedCheckOut,
+      roomNumber: roomNumberForNotify,
+      guestName,
+      guestFirstName,
+      numberOfGuests,
+      guestCountryName,
+      referer,
+    });
+  }
+};
+
+// 変更・キャンセル通知の送信先ルーティング（新規予約通知と同じルール）
+// 井尻: 常時通知 / それ以外: 当日チェックインのみしげたさんに通知
+const notifyBookingUpdate = ({ kind, config, checkIn, ...rest }) => {
+  const lineGroupId = config.lineGroupId || null;
+  const today = getDates(new Date());
+  const isTodayCheckIn = checkIn === today;
+  const targetGroupId = lineGroupId || (isTodayCheckIn ? LINE_GROUP_SHIGETA : null);
+
+  if (!targetGroupId) return;
+
+  if (kind === 'cancel') {
+    pushCancelLineNotification({ lineGroupId: targetGroupId, checkIn, ...rest });
+  } else {
+    pushChangeLineNotification({ lineGroupId: targetGroupId, checkIn, ...rest });
   }
 };
 
@@ -347,6 +415,64 @@ const pushNewBookingLineNotification = ({
 宿泊施設名：【${facilityName}】
 ・チェックイン：${checkIn}
 ・チェックアウト：${checkOut}
+・部屋番号: ${roomNumber}
+・ゲスト名： ${(guestName || "") + " " + (guestFirstName || "")}
+・ゲスト人数： ${numberOfGuests}
+・国籍： ${guestCountryName || "不明"}
+
+・OTA(予約サイト)： ${referer || "不明"}
+`
+  );
+};
+
+const pushCancelLineNotification = ({
+  lineGroupId,
+  facilityName,
+  checkIn,
+  checkOut,
+  roomNumber,
+  guestName,
+  guestFirstName,
+  numberOfGuests,
+  guestCountryName,
+  referer,
+}) => {
+  pushLineMessage(
+    lineGroupId,
+    `【キャンセル】予約がキャンセルされました
+宿泊施設名：【${facilityName}】
+・チェックイン：${checkIn}
+・チェックアウト：${checkOut}
+・部屋番号: ${roomNumber}
+・ゲスト名： ${(guestName || "") + " " + (guestFirstName || "")}
+・ゲスト人数： ${numberOfGuests}
+・国籍： ${guestCountryName || "不明"}
+
+・OTA(予約サイト)： ${referer || "不明"}
+`
+  );
+};
+
+const pushChangeLineNotification = ({
+  lineGroupId,
+  facilityName,
+  checkIn,
+  checkOut,
+  beforeCheckIn,
+  beforeCheckOut,
+  roomNumber,
+  guestName,
+  guestFirstName,
+  numberOfGuests,
+  guestCountryName,
+  referer,
+}) => {
+  pushLineMessage(
+    lineGroupId,
+    `【日程変更】予約内容が変更されました
+宿泊施設名：【${facilityName}】
+・チェックイン：${beforeCheckIn} → ${checkIn}
+・チェックアウト：${beforeCheckOut} → ${checkOut}
 ・部屋番号: ${roomNumber}
 ・ゲスト名： ${(guestName || "") + " " + (guestFirstName || "")}
 ・ゲスト人数： ${numberOfGuests}

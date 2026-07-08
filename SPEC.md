@@ -56,15 +56,23 @@ TENJIN → KUKOUMAE → KAIDUKA_SOFIA → MINAMI_RU → IJIRI → IJIRI_202
 ### 新規（BookingId が未登録）
 - `ROOM_ASSIGNMENT_MAP` に基づいて部屋番号を自動割り当て
 - スプレッドシートに1行追記
-- LINE 通知は現在コメントアウト中
+- LINE 通知あり（ルーティングは下記「LINE通知の送信先ルール」参照）
+- 追加時点で既にキャンセル済みの場合は通知しない
 
 ### 更新（BookingId が既存）
 - チェックイン・チェックアウト日が変わっていれば上書き
+  - 変化があり、かつキャンセル済みでなければ LINE 通知（日程変更）を送信
 - キャンセル状態が変わっていれば以下を更新：
   - キャンセル列 → `TRUE`
   - キャンセル時刻 → Beds24 の cancelTime
   - 部屋番号 → `{番号}_キャンセル`（例: `405_キャンセル`）
+  - LINE 通知（キャンセル）を送信
 - 変化なしの場合は何もしない
+
+### LINE通知の送信先ルール（新規・変更・キャンセル共通）
+- 対象物件に `lineGroupId` が設定されている（井尻）→ 常時通知
+- `lineGroupId` が未設定の物件 → チェックインが「本日」の予約のみ `LINE_GROUP_SHIGETA`（しげた整骨院）に通知
+- どちらにも該当しない場合は通知しない
 
 ## 部屋割り当てロジック（getRoomNumber）
 
@@ -110,7 +118,7 @@ const ROOM_ASSIGNMENT_MAP = {
 | 設定 | 現在値 | 備考 |
 |------|--------|------|
 | `IS_TEST_MODE` | `false` | true にすると testBookings を使用 |
-| LINE 通知 | 停止中（コメントアウト） | 再開時は upsertOneBooking の該当箇所を解除 |
+| LINE 通知 | 稼働中 | 新規予約・日程変更・キャンセルの3種類 |
 | LINE 通知先 | `DEV_LINE_GROUP_ID`（全施設共通） | 本番は `AKIYOSI_LINE_GROUP_ID` に変更 |
 | `arrivalFrom` | `20260622` | この日付以降の予約を取得 |
 
