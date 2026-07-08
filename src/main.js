@@ -145,8 +145,8 @@ const readExistingBookings = (sheet, idx) => {
       rowNum: i + 2,
       cancel: normalizeCancel(row[idx.cancel - 1]),
       roomNumber: row[idx.roomNumber - 1],
-      checkIn: String(row[idx.checkIn - 1] || ""),
-      checkOut: String(row[idx.checkOut - 1] || ""),
+      checkIn: normalizeDateCell(row[idx.checkIn - 1]),
+      checkOut: normalizeDateCell(row[idx.checkOut - 1]),
     };
 
     existingArray.push({
@@ -490,6 +490,13 @@ const toNumber = (n) => Number(n || 0);
 
 const normalizeCancel = (val) =>
   String(val).toUpperCase() === "TRUE" ? "TRUE" : "";
+
+// セル値を yyyy-MM-dd に正規化（日付セルは Date オブジェクトで返るため）
+const normalizeDateCell = (val) => {
+  if (!val) return "";
+  if (val instanceof Date) return getDates(val);
+  return String(val).slice(0, 10);
+};
 
 // 日付を1日加算する関数
 const addOneDay = dateStr => {
