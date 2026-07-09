@@ -1,4 +1,11 @@
 const pushLineMessage = (targetGroupId, message) => {
+  // ★一時テストモード: 宛先をテスト用グループに差し替え（main.js の NOTIFY_TEST_MODE 参照）
+  if (typeof NOTIFY_TEST_MODE !== 'undefined' && NOTIFY_TEST_MODE) {
+    Logger.log(`[TEST] 本来の宛先: ${targetGroupId} → テスト用グループに差し替え`);
+    targetGroupId = TEST_LINE_GROUP_ID;
+    message = `【テスト送信】\n${message}`;
+  }
+
   if (!targetGroupId) {
     Logger.log('送信先のGROUP_IDが指定されていません。メッセージ送信を中止します。');
     return;

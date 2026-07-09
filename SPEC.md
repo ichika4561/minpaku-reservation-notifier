@@ -118,6 +118,7 @@ const ROOM_ASSIGNMENT_MAP = {
 | 設定 | 現在値 | 備考 |
 |------|--------|------|
 | `IS_TEST_MODE` | `false` | true にすると testBookings を使用 |
+| `NOTIFY_TEST_MODE` | `false` | true にすると全LINE通知を `DEV_LINE_GROUP_ID`（テストグループ）へ差し替え |
 | LINE 通知 | 稼働中 | 新規予約・日程変更・キャンセルの3種類 |
 | LINE 通知先 | `DEV_LINE_GROUP_ID`（全施設共通） | 本番は `AKIYOSI_LINE_GROUP_ID` に変更 |
 | `arrivalFrom` | `20260622` | この日付以降の予約を取得 |

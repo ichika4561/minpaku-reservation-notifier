@@ -5,10 +5,14 @@ const props = PropertiesService.getScriptProperties();
 // Beds24APIキー
 const API_KEY = props.getProperty('BEDS24_API_KEY');
 
-// LINE通知用
-// const ChannelAccessToken = props.getProperty('DEV_LINE_CHANNEL_ACCESS_TOKEN');
+// テストモード: true にすると全LINE通知をテスト用グループ(DEV_LINE_GROUP_ID)に送る
+const NOTIFY_TEST_MODE = false;
+const TEST_LINE_GROUP_ID = props.getProperty('DEV_LINE_GROUP_ID');
 
-const ChannelAccessToken = props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
+// LINE通知用
+const ChannelAccessToken = NOTIFY_TEST_MODE
+  ? props.getProperty('DEV_LINE_CHANNEL_ACCESS_TOKEN')
+  : props.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
 
 // 井尻清掃会社（深町さん）のLINEグループID
 const LINE_GROUP_IJIRI = 'C39a22d60cbd917fa49cc5c5199ff6b27';
@@ -491,11 +495,16 @@ const toNumber = (n) => Number(n || 0);
 const normalizeCancel = (val) =>
   String(val).toUpperCase() === "TRUE" ? "TRUE" : "";
 
-// セル値を yyyy-MM-dd に正規化（日付セルは Date オブジェクトで返るため）
+// セル値を yyyy-MM-dd に正規化
+// 日付セルは Date オブジェクト、テキストセルは "2026-07-17" や
+// "Fri Jul 17 2026 00:00:00 GMT+0900" のような文字列で返るため全て吸収する
 const normalizeDateCell = (val) => {
   if (!val) return "";
   if (val instanceof Date) return getDates(val);
-  return String(val).slice(0, 10);
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const parsed = new Date(s);
+  return isNaN(parsed.getTime()) ? s.slice(0, 10) : getDates(parsed);
 };
 
 // 日付を1日加算する関数
