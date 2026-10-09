@@ -40,7 +40,7 @@ Beds24 API → GAS (main.js) → Google スプレッドシート
 
 ## main() の実行内容
 
-7回 `updateBookingSheet()` を呼び出す（井尻は2物件に分かれているため）。
+`PROPERTIES` に定義された 6 つの propKey ごとに `updateBookingSheet()` を呼び出す（井尻は propKey が2つに分かれているため）。
 
 ```
 TENJIN → KUKOUMAE → KAIDUKA_SOFIA → MINAMI_RU → IJIRI → IJIRI_202
@@ -72,6 +72,7 @@ TENJIN → KUKOUMAE → KAIDUKA_SOFIA → MINAMI_RU → IJIRI → IJIRI_202
 ### LINE通知の送信先ルール（新規・変更・キャンセル共通）
 - 対象物件に `lineGroupId` が設定されている（井尻）→ 常時通知
 - `lineGroupId` が未設定の物件 → チェックインが「本日」の予約のみ `LINE_GROUP_SHIGETA`（しげた整骨院）に通知
+  - 日程変更のみ追加条件: 変更前または変更後のチェックアウトが「翌日」の予約も `LINE_GROUP_SHIGETA` に通知（新規・キャンセルは対象外）
 - どちらにも該当しない場合は通知しない
 
 ## 部屋割り当てロジック（getRoomNumber）
@@ -120,15 +121,15 @@ const ROOM_ASSIGNMENT_MAP = {
 | `IS_TEST_MODE` | `false` | true にすると testBookings を使用 |
 | `NOTIFY_TEST_MODE` | `false` | true にすると全LINE通知を `DEV_LINE_GROUP_ID`（テストグループ）へ差し替え |
 | LINE 通知 | 稼働中 | 新規予約・日程変更・キャンセルの3種類 |
-| LINE 通知先 | `DEV_LINE_GROUP_ID`（全施設共通） | 本番は `AKIYOSI_LINE_GROUP_ID` に変更 |
-| `arrivalFrom` | `20260622` | この日付以降の予約を取得 |
+| LINE 通知先 | 井尻=深町さんグループ（常時） / 他物件=当日チェックインのみ しげた整骨院グループ | 定数 `LINE_GROUP_IJIRI` / `LINE_GROUP_SHIGETA` |
+| `arrivalFrom` | `20260525` | この日付以降の予約を取得 |
 
 ## API・認証
 
 - Beds24 API v1: `https://www.beds24.com/api/json/getBookings`
 - 認証: `apiKey`（全物件共通）+ `propKey`（物件ごと）
 - 各キーは GAS スクリプトプロパティ（`PropertiesService`）で管理
-- LINE: `DEV_LINE_CHANNEL_ACCESS_TOKEN` を使用中
+- LINE: 本番 `LINE_CHANNEL_ACCESS_TOKEN` を使用（`NOTIFY_TEST_MODE=true` 時のみ `DEV_LINE_CHANNEL_ACCESS_TOKEN`）
 
 ## clasp 運用手順
 

@@ -61,7 +61,7 @@ const getBookInfo = (propKey) => {
       apiKey: API_KEY,
       propKey: propKey,
     },
-    "arrivalFrom": "20260625",
+    "arrivalFrom": "20260525",
     }),
   });
 
@@ -348,11 +348,17 @@ const updateExistingRow = (sheet, idx, existing, payload) => {
 
 // 変更・キャンセル通知の送信先ルーティング（新規予約通知と同じルール）
 // 井尻: 常時通知 / それ以外: 当日チェックインのみしげたさんに通知
+// 日程変更のみ追加: 変更前 or 変更後のチェックアウトが翌日の予約もしげたさんに通知
 const notifyBookingUpdate = ({ kind, config, checkIn, ...rest }) => {
   const lineGroupId = config.lineGroupId || null;
-  const today = getDates(new Date());
+  const now = new Date();
+  const today = getDates(now);
+  const tomorrow = getDates(new Date(now.getTime() + 24 * 60 * 60 * 1000));
   const isTodayCheckIn = checkIn === today;
-  const targetGroupId = lineGroupId || (isTodayCheckIn ? LINE_GROUP_SHIGETA : null);
+  const isTomorrowCheckOut = kind === 'change'
+    && (rest.checkOut === tomorrow || rest.beforeCheckOut === tomorrow);
+  const targetGroupId = lineGroupId
+    || (isTodayCheckIn || isTomorrowCheckOut ? LINE_GROUP_SHIGETA : null);
 
   if (!targetGroupId) return;
 
