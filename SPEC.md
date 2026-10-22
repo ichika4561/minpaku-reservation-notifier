@@ -46,10 +46,13 @@ Beds24 API → GAS (main.js) → Google スプレッドシート
 TENJIN → KUKOUMAE → KAIDUKA_SOFIA → MINAMI_RU → IJIRI → IJIRI_202
 ```
 
+スプレッドシートの既存データは、同じシートを使う物件間で最初に1回だけ読み取り、使い回す（追記した行もメモリ上に反映）。
+
 各呼び出しで以下を実行：
-1. Beds24 API から `arrivalFrom` 以降の予約を取得
-2. スプレッドシートの既存データを読み取り
-3. 予約ごとに upsert 処理
+1. Beds24 API から「チェックアウトが14日前以降」の予約を取得（`arrivalFrom`=60日前 + `departureFrom`=14日前。v1 は `departureFrom` 単独だと無視されるため併用）
+2. 予約ごとに upsert 処理
+
+※ 2026-10-22 改修: 以前は `arrivalFrom` を固定日付（20260525）にして毎回全件取得・物件ごとにシート全体を再読込しており、6分の実行時間上限を超える失敗が1日2〜9回出ていた。チェックアウトが14日より前の予約の変更・キャンセルはシートに反映されない。
 
 ## upsert ロジック
 
@@ -122,7 +125,8 @@ const ROOM_ASSIGNMENT_MAP = {
 | `NOTIFY_TEST_MODE` | `false` | true にすると全LINE通知を `DEV_LINE_GROUP_ID`（テストグループ）へ差し替え |
 | LINE 通知 | 稼働中 | 新規予約・日程変更・キャンセルの3種類 |
 | LINE 通知先 | 井尻=深町さんグループ（常時） / 他物件=当日チェックインのみ しげた整骨院グループ | 定数 `LINE_GROUP_IJIRI` / `LINE_GROUP_SHIGETA` |
-| `arrivalFrom` | `20260525` | この日付以降の予約を取得 |
+| `FETCH_DEPARTURE_DAYS_AGO` | `14` | チェックアウトがこの日数前以降の予約を取得 |
+| `FETCH_ARRIVAL_DAYS_AGO` | `60` | 長期滞在の取りこぼし防止用の到着日下限 |
 
 ## API・認証
 

@@ -49,7 +49,19 @@ const PROPERTIES = [
 ];
 
 
-// 指定がない場合は本日以降の予約を取得
+// 取得範囲: チェックアウトが FETCH_DEPARTURE_DAYS_AGO 日前以降の予約
+// （Beds24 v1 は departureFrom 単独だと無視されるため arrivalFrom と併用する。
+//   arrivalFrom は長期滞在を取りこぼさないよう余裕を持たせる）
+const FETCH_DEPARTURE_DAYS_AGO = 14;
+const FETCH_ARRIVAL_DAYS_AGO = 60;
+
+const daysAgoYmd = (days) =>
+  Utilities.formatDate(
+    new Date(Date.now() - days * 24 * 60 * 60 * 1000),
+    Session.getScriptTimeZone(),
+    "yyyyMMdd"
+  );
+
 const getBookInfo = (propKey) => {
   const URL = 'https://www.beds24.com/api/json/getBookings';
 
@@ -61,20 +73,22 @@ const getBookInfo = (propKey) => {
       apiKey: API_KEY,
       propKey: propKey,
     },
-    "arrivalFrom": "20260525",
+    "arrivalFrom": daysAgoYmd(FETCH_ARRIVAL_DAYS_AGO),
+    "departureFrom": daysAgoYmd(FETCH_DEPARTURE_DAYS_AGO),
     }),
   });
 
   return JSON.parse(response.getContentText());
 }
 
-const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
+// シートを開いて必須カラムと既存データを1回だけ読み込む
+const loadSheetContext = (spreadsheetId, sheetName) => {
   const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
   const sheet = spreadsheet.getSheetByName(sheetName);
 
   if (!sheet) {
     Logger.log(`スプレッドシートID: ${spreadsheetId} 内にシート名 ${sheetName} が見つかりません`);
-    return;
+    return null;
   }
 
   // 1) 必須カラムのインデックス取得
@@ -86,10 +100,16 @@ const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
     cancel: "キャンセル",
     cancelTime: "キャンセル時刻",
   });
-  if (!indexes) return;
+  if (!indexes) return null;
 
   // 2) 既存データを読み取り
   const { existingById, existingArray } = readExistingBookings(sheet, indexes);
+
+  return { sheet, indexes, existingById, existingArray };
+};
+
+const updateBookingSheet = (propKey, ctx) => {
+  const { sheet, indexes, existingById, existingArray } = ctx;
 
   // 3) APIから予約一覧を取得
   const bookings = IS_TEST_MODE ? testBookings : getBookInfo(propKey);
@@ -107,11 +127,15 @@ const updateBookingSheet = (propKey, sheetName, spreadsheetId) => {
 
 /**
  * プロパティごとに updateBookingSheet を実行するためのメイン関数
+ * 同じシートを使う物件は、シートの読み込みを1回にまとめて使い回す
  */
 const main = () => {
-  PROPERTIES.forEach(({ propKey, spreadsheetId, sheetName }) =>
-    updateBookingSheet(propKey, sheetName, spreadsheetId)
-  );
+  const contexts = {};
+  PROPERTIES.forEach(({ propKey, spreadsheetId, sheetName }) => {
+    const key = `${spreadsheetId}/${sheetName}`;
+    if (!(key in contexts)) contexts[key] = loadSheetContext(spreadsheetId, sheetName);
+    if (contexts[key]) updateBookingSheet(propKey, contexts[key]);
+  });
 };
 
 
@@ -228,6 +252,16 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
       cancel: newCancel,
       cancelTime: cancelTime || "",
     });
+
+    // シート読み込みを使い回すため、追記した行をメモリ上の既存データにも反映する
+    existingById[bookId] = {
+      rowNum: sheet.getLastRow(),
+      cancel: newCancel,
+      roomNumber,
+      checkIn: normalizeDateCell(checkIn),
+      checkOut: normalizeDateCell(checkOut),
+    };
+    existingArray.push({ BookingId: bookId, CheckIn: checkIn, CheckOut: checkOut, RoomNumber: roomNumber });
 
     const lineGroupId = config.lineGroupId || null;
     const today = getDates(new Date());
