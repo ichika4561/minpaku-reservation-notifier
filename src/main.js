@@ -203,6 +203,8 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
     guestCountry,
     roomId: rawRoomId,
   } = booking;
+  // 部屋番号は Beds24 の割当(unitId)に合わせる
+  const beds24RoomNumber = getRoomNumber(booking);
 
   const checkIn = firstNight;
   const checkOut = formatDate(addOneDay(lastNight));
@@ -229,10 +231,11 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
       numberOfGuests,
       guestCountryName,
       referer,
+      beds24RoomNumber,
     });
   } else {
-    // 部屋番号は、roomIDから取得できる情報がない場合、グローバル定数のデフォルトを使用
-      const roomNumber = getRoomNumber(booking, existingArray);
+    // キャンセル済みで部屋未割当の予約は「要割当」にしない
+    const roomNumber = newCancel === "TRUE" && beds24RoomNumber === UNASSIGNED_ROOM ? "" : beds24RoomNumber;
 
     // 施設番号、施設名、部屋番号の順序を変更して渡す
     appendNewBookingRow(sheet, idx, {
@@ -270,6 +273,10 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
     if (newCancel === "TRUE") {
       Logger.log(`新規追加されたBookingId ${bookId} はキャンセル済みのため、LINE通知は送信しませんでした。`);
     } else {
+      if (roomNumber === UNASSIGNED_ROOM) {
+        pushOwnerRoomAlert({ kind: 'unassigned', bookId, facilityName, checkIn, checkOut, guestName, guestFirstName });
+      }
+
       // 井尻：既存通知（当日IN以外も含む）
       if (lineGroupId) {
         pushNewBookingLineNotification({
@@ -309,9 +316,29 @@ const updateExistingRow = (sheet, idx, existing, payload) => {
   const {
     bookId, newCancel, cancelTime, checkIn, checkOut,
     config, facilityName, guestName, guestFirstName, numberOfGuests, guestCountryName, referer,
+    beds24RoomNumber,
   } = payload;
   const row = existing.rowNum;
   const currentCancel = existing.cancel;
+
+  // 部屋番号を Beds24 の割当に合わせる（キャンセル済みは対象外）
+  // Beds24 で部屋未割当のときは、空欄の行だけ「要割当」にする（入力済みの部屋は消さない）
+  const currentRoomNumber = String(existing.roomNumber || "");
+  if (currentCancel !== "TRUE" && newCancel !== "TRUE" && beds24RoomNumber) {
+    const roomChanged = beds24RoomNumber !== UNASSIGNED_ROOM && currentRoomNumber !== beds24RoomNumber;
+    const newlyUnassigned = beds24RoomNumber === UNASSIGNED_ROOM && currentRoomNumber === "";
+    if (roomChanged || newlyUnassigned) {
+      sheet.getRange(row, idx.roomNumber).setValue(beds24RoomNumber);
+      existing.roomNumber = beds24RoomNumber;
+      Logger.log(`BookingId ${bookId} の部屋番号を ${currentRoomNumber || "(空欄)"} → ${beds24RoomNumber} に更新しました。`);
+      pushOwnerRoomAlert({
+        kind: roomChanged ? 'change' : 'unassigned',
+        bookId, facilityName, checkIn, checkOut, guestName, guestFirstName,
+        beforeRoomNumber: currentRoomNumber,
+        roomNumber: beds24RoomNumber,
+      });
+    }
+  }
 
   // 日付変更チェック
   const normalizedCheckIn = String(checkIn || "").slice(0, 10);
@@ -525,6 +552,30 @@ const pushChangeLineNotification = ({
 ・OTA(予約サイト)： ${referer || "不明"}
 `
   );
+};
+
+// オーナー宛: 部屋未割当・部屋変更の通知
+const pushOwnerRoomAlert = ({ kind, bookId, facilityName, checkIn, checkOut, guestName, guestFirstName, beforeRoomNumber, roomNumber }) => {
+  const guest = `${guestName || ""} ${guestFirstName || ""}`.trim();
+  const message = kind === 'unassigned'
+    ? `【要割当】部屋が決まっていない予約があります
+宿泊施設名：【${facilityName}】
+・チェックイン：${checkIn}
+・チェックアウト：${checkOut}
+・ゲスト名： ${guest}
+・BookingId： ${bookId}
+
+Beds24で部屋を割り当ててください（必要なら他の予約を移動）。割り当て後、30分以内にスプシへ反映されます。`
+    : `【部屋変更】Beds24の割当に合わせてスプシの部屋番号を更新しました
+宿泊施設名：【${facilityName}】
+・チェックイン：${checkIn}
+・チェックアウト：${checkOut}
+・部屋番号： ${beforeRoomNumber || "(空欄)"} → ${roomNumber}
+・ゲスト名： ${guest}
+・BookingId： ${bookId}
+
+案内送信済み・清掃手配済みなら、ゲスト・清掃会社への連絡が必要です。`;
+  pushOwnerLineMessage(message);
 };
 
 /* ===============================
