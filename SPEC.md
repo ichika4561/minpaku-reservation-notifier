@@ -2,6 +2,8 @@
 
 Beds24 の予約データを Google スプレッドシートに自動同期する Google Apps Script。
 
+目的・業務ルールなどの要件は [REQUIREMENTS.md](REQUIREMENTS.md) を参照。
+
 ## システム構成
 
 ```
@@ -19,7 +21,7 @@ Beds24 API → GAS (main.js) → Google スプレッドシート
 |---------|------|
 | `src/main.js` | メイン処理（設定定数・API呼び出し・スプシ更新） |
 | `src/message.js` | LINE Push 通知送信 |
-| `src/roomNumber-getter.js` | 部屋番号の自動割り当て |
+| `src/roomNumber-getter.js` | Beds24 の割当(unitId)から部屋番号を決める |
 | `src/lang.js` | 国コード → 国名変換 |
 | `src/test.js` | テスト用ダミー予約データ |
 
@@ -27,7 +29,7 @@ Beds24 API → GAS (main.js) → Google スプレッドシート
 
 | 物件名 | Room ID | 部屋番号 | propKey 定数 | 施設番号 |
 |--------|---------|---------|-------------|---------|
-| 南福岡ルネッサンス 405/605 | `547172` | 405 → 605（競合時） | `PROP_KEY_MINAMI_RU` | 0038393 |
+| 南福岡ルネッサンス 405/605 | `547172` | 405（unitId 1）/ 605（unitId 2） | `PROP_KEY_MINAMI_RU` | 0038393 |
 | 南福岡ルネッサンス 502 | `547174` | 502 | `PROP_KEY_MINAMI_RU` | 0038393 |
 | ソフィアたかき(貝塚) | `586879` | 202 | `PROP_KEY_KAIDUKA_SOFIA` | 0040711 |
 | コーポプチミラージュ(井尻) 203 | `594999` | 203 | `PROP_KEY_IJIRI` | 0042005 |
