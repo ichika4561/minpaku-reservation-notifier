@@ -274,7 +274,7 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
       Logger.log(`新規追加されたBookingId ${bookId} はキャンセル済みのため、LINE通知は送信しませんでした。`);
     } else {
       if (roomNumber === UNASSIGNED_ROOM) {
-        pushOwnerRoomAlert({ kind: 'unassigned', bookId, facilityName, checkIn, checkOut, guestName, guestFirstName });
+        pushOwnerRoomAlert({ bookId, facilityName, checkIn, checkOut, guestName, guestFirstName });
       }
 
       // 井尻：既存通知（当日IN以外も含む）
@@ -331,12 +331,16 @@ const updateExistingRow = (sheet, idx, existing, payload) => {
       sheet.getRange(row, idx.roomNumber).setValue(beds24RoomNumber);
       existing.roomNumber = beds24RoomNumber;
       Logger.log(`BookingId ${bookId} の部屋番号を ${currentRoomNumber || "(空欄)"} → ${beds24RoomNumber} に更新しました。`);
-      pushOwnerRoomAlert({
-        kind: roomChanged ? 'change' : 'unassigned',
-        bookId, facilityName, checkIn, checkOut, guestName, guestFirstName,
-        beforeRoomNumber: currentRoomNumber,
-        roomNumber: beds24RoomNumber,
-      });
+      if (roomChanged) {
+        pushRoomChangeLineNotification({
+          lineGroupId: config.lineGroupId || LINE_GROUP_SHIGETA,
+          facilityName, checkIn, checkOut, guestName, guestFirstName, numberOfGuests,
+          beforeRoomNumber: currentRoomNumber,
+          roomNumber: beds24RoomNumber,
+        });
+      } else {
+        pushOwnerRoomAlert({ bookId, facilityName, checkIn, checkOut, guestName, guestFirstName });
+      }
     }
   }
 
@@ -554,28 +558,35 @@ const pushChangeLineNotification = ({
   );
 };
 
-// オーナー宛: 部屋未割当・部屋変更の通知
-const pushOwnerRoomAlert = ({ kind, bookId, facilityName, checkIn, checkOut, guestName, guestFirstName, beforeRoomNumber, roomNumber }) => {
-  const guest = `${guestName || ""} ${guestFirstName || ""}`.trim();
-  const message = kind === 'unassigned'
-    ? `【要割当】部屋が決まっていない予約があります
+// 清掃グループ宛: 部屋変更の通知（井尻=深町さん / それ以外=しげた整骨院）
+const pushRoomChangeLineNotification = ({
+  lineGroupId, facilityName, checkIn, checkOut, beforeRoomNumber, roomNumber,
+  guestName, guestFirstName, numberOfGuests,
+}) => {
+  pushLineMessage(
+    lineGroupId,
+    `【部屋変更】部屋番号が変わりました
 宿泊施設名：【${facilityName}】
 ・チェックイン：${checkIn}
 ・チェックアウト：${checkOut}
-・ゲスト名： ${guest}
-・BookingId： ${bookId}
+・部屋番号：${beforeRoomNumber || "(空欄)"} → ${roomNumber}
+・ゲスト名：${`${guestName || ""} ${guestFirstName || ""}`.trim()}
+・ゲスト人数：${numberOfGuests}`
+  );
+};
 
-Beds24で部屋を割り当ててください（必要なら他の予約を移動）。割り当て後、30分以内にスプシへ反映されます。`
-    : `【部屋変更】Beds24の割当に合わせてスプシの部屋番号を更新しました
+// オーナー宛: 部屋未割当の通知
+const pushOwnerRoomAlert = ({ bookId, facilityName, checkIn, checkOut, guestName, guestFirstName }) => {
+  pushOwnerLineMessage(
+    `【要割当】部屋が決まっていない予約があります
 宿泊施設名：【${facilityName}】
 ・チェックイン：${checkIn}
 ・チェックアウト：${checkOut}
-・部屋番号： ${beforeRoomNumber || "(空欄)"} → ${roomNumber}
-・ゲスト名： ${guest}
+・ゲスト名： ${`${guestName || ""} ${guestFirstName || ""}`.trim()}
 ・BookingId： ${bookId}
 
-案内送信済み・清掃手配済みなら、ゲスト・清掃会社への連絡が必要です。`;
-  pushOwnerLineMessage(message);
+Beds24で部屋を割り当ててください（必要なら他の予約を移動）。割り当て後、30分以内にスプシへ反映され、清掃グループに【部屋変更】が届きます。`
+  );
 };
 
 /* ===============================

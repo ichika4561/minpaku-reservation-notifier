@@ -89,11 +89,11 @@ TENJIN → KUKOUMAE → KAIDUKA_SOFIA → MINAMI_RU → IJIRI → IJIRI_202
 
 ### 部屋の追従・オーナー通知
 - 新規予約が `要割当` → オーナーに【要割当】通知（キャンセル済みは `要割当` にせず通知もしない）
-- 既存予約（キャンセル以外）で Beds24 の部屋とスプシが違う → スプシを Beds24 に合わせ、オーナーに【部屋変更】通知（`要割当` → 部屋確定もこれ）
+- 既存予約（キャンセル以外）で Beds24 の部屋とスプシが違う → スプシを Beds24 に合わせ、**清掃グループ**に【部屋変更】通知（`要割当` → 部屋確定もこれ）。送り先は `lineGroupId`（井尻=深町さん）、なければ `LINE_GROUP_SHIGETA`。当日チェックインに限らず即時送信
 - 既存予約で Beds24 が未割当、スプシが空欄 → `要割当` にしてオーナーに【要割当】通知
 - 既存予約で Beds24 が未割当、スプシに部屋が入っている → 何もしない（入力済みの部屋は消さない）
-- オーナー通知先: スクリプトプロパティ `OWNER_LINE_CHANNEL_ACCESS_TOKEN`（DevBot @095extxz）があれば broadcast。未設定 or `NOTIFY_TEST_MODE` 時はテストグループ（`DEV_LINE_GROUP_ID` / `DEV_LINE_CHANNEL_ACCESS_TOKEN`）へ push
-- 清掃会社・しげたさん宛の通知は部屋変更では送らない（必要ならオーナーが連絡）
+- 【要割当】のオーナー通知先: スクリプトプロパティ `OWNER_LINE_CHANNEL_ACCESS_TOKEN`（DevBot @095extxz）があれば broadcast。未設定 or `NOTIFY_TEST_MODE` 時はテストグループ（`DEV_LINE_GROUP_ID` / `DEV_LINE_CHANNEL_ACCESS_TOKEN`）へ push
+- 案内送信済みのゲストへの再連絡は自動ではしない（オーナーが対応）
 
 ```js
 const ROOM_ASSIGNMENT_MAP = {
