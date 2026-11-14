@@ -188,6 +188,8 @@ const readExistingBookings = (sheet, idx) => {
   return { existingById, existingArray };
 };
 
+const BOOKING_STATUSES_TO_PROCESS = ["0", "1", "2", "4"];
+
 const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
   const {
     bookId,
@@ -203,6 +205,15 @@ const upsertOneBooking = (sheet, idx, existingById, existingArray, booking) => {
     guestCountry,
     roomId: rawRoomId,
   } = booking;
+
+  // 予約確定前の Airbnb 問い合わせ・リクエスト（status "3" など）は予約として扱わない。
+  // シート追記・清掃通知・要割当通知の対象外。確定すると status が 1/2 に変わり、その時点で新規予約として処理される。
+  // 0=キャンセル 1=確定 2=新規 4=ブロック 以外はすべてスキップ（2026-11-15 追加）
+  if (!BOOKING_STATUSES_TO_PROCESS.includes(String(status))) {
+    Logger.log(`BookingId ${bookId} は status ${status}（問い合わせ・リクエスト等）のためスキップしました。`);
+    return;
+  }
+
   // 部屋番号は Beds24 の割当(unitId)に合わせる
   const beds24RoomNumber = getRoomNumber(booking);
 
