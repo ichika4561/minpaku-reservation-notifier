@@ -93,7 +93,7 @@ flowchart LR
 ### 5.4 通知先の判定（新規予約・日程変更・キャンセル）
 
 ```mermaid
-flowchart LR
+flowchart TD
     A([通知の候補]) --> I{井尻<br/>203 / 202 / 202 tatami?}
     I -- はい --> FUKA[深町さんのLINEグループへ<br/>日付に関係なく送る]
     I -- いいえ<br/>南福岡・ソフィア・ガレット・天神 --> T{チェックインが今日?}
