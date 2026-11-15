@@ -58,6 +58,13 @@ TENJIN → KUKOUMAE → KAIDUKA_SOFIA → MINAMI_RU → IJIRI → IJIRI_202
 
 ## upsert ロジック
 
+処理全体のフロー図は [REQUIREMENTS.md の「5. 処理の流れ」](REQUIREMENTS.md#5-処理の流れフロー図) を参照。
+
+### 対象外の予約（2026-11-15 追加）
+- `status` が `0`（キャンセル）・`1`（確定）・`2`（新規）・`4`（ブロック）以外の予約は、`upsertOneBooking` の冒頭で何もせずに戻る（`BOOKING_STATUSES_TO_PROCESS`）
+- Airbnb の予約前の問い合わせ・予約リクエスト（Beds24 の「Inquiry and Requests」を Import all にしたため取り込まれる）を、予約一覧・清掃通知・要割当通知に出さないため
+- 確定すると status が 1/2 に変わり、シートに未登録なので次の実行で新規予約として追加・通知される
+
 ### 新規（BookingId が未登録）
 - Beds24 の割当（`unitId`）から部屋番号を決める（下記「部屋割り当てロジック」）
 - スプレッドシートに1行追記
